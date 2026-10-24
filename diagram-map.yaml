@@ -1,0 +1,23 @@
+# Diagram Map
+# Maps file globs to diagram files and node IDs within those diagrams.
+# The most specific glob wins when multiple patterns match.
+
+- glob: "apps/server/**"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "server"
+
+- glob: "apps/client/**"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "client"
+
+- glob: ".claude/hooks/**"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "hooks"
+
+- glob: "docs/diagrams/**"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "database"
+
+- glob: "docs/plans/**"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "planning"

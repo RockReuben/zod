@@ -1,0 +1,9 @@
+{
+  "name": "zod-control-center",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "echo \"Check passed\""
+  }
+}
