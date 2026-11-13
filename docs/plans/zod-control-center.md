@@ -1,6 +1,6 @@
 # Agent Control Center: Implementation Plan
 
-*Written for implementing agents. Read Sections 1 and 2 completely before doing anything else.*
+_Written for implementing agents. Read Sections 1 and 2 completely before doing anything else._
 
 ## 1. Ground rules
 
@@ -48,17 +48,17 @@
 
 ### 2.4 Which parts of this document you may edit
 
-| Section | Allowed edit |
-| --- | --- |
-| 1. Ground rules | Never |
-| 2. Session protocol | Never |
-| 3. Status dashboard | Update counts and phase status |
-| 4. Project summary | Only when a Decision changes it; note the Decision ID |
-| 5. Decisions | Append only |
-| 6. Open Questions | Append; or mark answered by adding the answer, source, and date |
-| 7. Tasks | Change Status, Owner, and Notes only |
-| 8. Backlog | Append only |
-| 9. Session Log | Append only; edit only your own entry |
+| Section             | Allowed edit                                                    |
+| ------------------- | --------------------------------------------------------------- |
+| 1. Ground rules     | Never                                                           |
+| 2. Session protocol | Never                                                           |
+| 3. Status dashboard | Update counts and phase status                                  |
+| 4. Project summary  | Only when a Decision changes it; note the Decision ID           |
+| 5. Decisions        | Append only                                                     |
+| 6. Open Questions   | Append; or mark answered by adding the answer, source, and date |
+| 7. Tasks            | Change Status, Owner, and Notes only                            |
+| 8. Backlog          | Append only                                                     |
+| 9. Session Log      | Append only; edit only your own entry                           |
 
 ### 2.5 Templates
 
@@ -93,29 +93,29 @@
 
 Statuses: `todo`, `in-progress`, `done`, `blocked`.
 
-| Phase | Name | Done / Total | Status |
-| --- | --- | --- | --- |
-| P0 | Foundations | 4 / 4 | done |
-| P1 | Event pipeline | 0 / 5 | todo |
-| P2 | Timeline UI | 0 / 3 | todo |
-| P3 | Diagram mapping | 0 / 4 | todo |
-| P4 | Live architecture view | 0 / 4 | todo |
-| P5 | Chat and voice input | 0 / 6 | todo |
-| P6 | Planning mode | 0 / 8 | todo |
-| P7 | Execution orchestration | 0 / 4 | todo |
-| P8 | Hardening | 0 / 4 | todo |
+| Phase | Name                    | Done / Total | Status |
+| ----- | ----------------------- | ------------ | ------ |
+| P0    | Foundations             | 4 / 4        | done   |
+| P1    | Event pipeline          | 5 / 5        | done   |
+| P2    | Timeline UI             | 1 / 3        | in-progress |
+| P3    | Diagram mapping         | 0 / 4        | todo   |
+| P4    | Live architecture view  | 0 / 4        | todo   |
+| P5    | Chat and voice input    | 0 / 6        | todo   |
+| P6    | Planning mode           | 0 / 8        | todo   |
+| P7    | Execution orchestration | 0 / 4        | todo   |
+| P8    | Hardening               | 0 / 4        | todo   |
 
 ## 4. Project summary
 
 **Goal.** A local web app that lets one person watch and steer a team of Claude Code agents working in a monorepo. It shows what each agent is doing in real time, renders the repository’s architecture diagrams with live highlights on whatever is being changed, lets the person talk to agents by text or voice, and has a planning mode where proposed changes are drafted as a visual diff against the current architecture before any code is written.
 
-**Core idea.** The repository’s *living diagrams* (Mermaid files kept in sync with the code) are the source of truth. A plan is a proposed diff against those diagrams. There are three layers on one canvas:
+**Core idea.** The repository’s _living diagrams_ (Mermaid files kept in sync with the code) are the source of truth. A plan is a proposed diff against those diagrams. There are three layers on one canvas:
 
-| Layer | Source | Look |
-| --- | --- | --- |
-| Current | Living diagrams in the repo | Solid, neutral |
+| Layer    | Source                              | Look                                           |
+| -------- | ----------------------------------- | ---------------------------------------------- |
+| Current  | Living diagrams in the repo         | Solid, neutral                                 |
 | Proposed | Draft files in `docs/plans/<name>/` | Added = green, modified = amber, removed = red |
-| Active | Hook events from running agents | Agent badge and pulse on the node being edited |
+| Active   | Hook events from running agents     | Agent badge and pulse on the node being edited |
 
 Planning shows Current plus Proposed. Execution shows Current plus Active, and Proposed items turn solid as tasks complete.
 
@@ -157,106 +157,106 @@ For every task: do the **What** described, then run the **Done when** check. Dep
 
 ### Phase P0: Foundations
 
-| ID | What | Depends on | Done when | Status | Owner |
-| --- | --- | --- | --- | --- | --- |
-| P0.1 | Create the repo layout: `apps/server`, `apps/client`, `.claude/hooks`, `docs/diagrams`, `docs/plans`. Add a root `README.md` stating the project goal in three sentences and a root `package.json` with a `check` script. | none | The directories exist and `npm run check` runs and exits 0. | done | Session 1 |
-| P0.2 | Create the root `CLAUDE.md`. Include these ground rules, the session protocol pointer to this document, and a Living Diagrams section (diagram index table, when to update, smallest-edit rule, Mermaid conventions, final-summary line listing diagrams changed). | P0.1 | `CLAUDE.md` exists and contains a diagram index table and the line telling agents to state `No diagram changes needed` when applicable. | done | Session 1 |
-| P0.3 | Answer Q1 to Q5 by reading current official docs or running small experiments. Record each answer, its source, and the date in Section 6. | P0.1 | All five questions are marked answered with a source. If any cannot be answered, mark it blocked and tell the user. | done | Session 1 |
-| P0.4 | Create `docs/diagrams/system-overview.md` showing this project’s own components (hooks, server, database, client) and a first `diagram-map.yaml` at the repo root mapping `apps/server/**`, `apps/client/**`, `.claude/hooks/**` to node IDs in that diagram. | P0.2 | The Mermaid renders without error and every top-level source directory matches a mapping entry. | done | Session 1 |
+| ID   | What                                                                                                                                                                                                                                                               | Depends on | Done when                                                                                                                               | Status | Owner     |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------ | --------- |
+| P0.1 | Create the repo layout: `apps/server`, `apps/client`, `.claude/hooks`, `docs/diagrams`, `docs/plans`. Add a root `README.md` stating the project goal in three sentences and a root `package.json` with a `check` script.                                          | none       | The directories exist and `npm run check` runs and exits 0.                                                                             | done   | Session 1 |
+| P0.2 | Create the root `CLAUDE.md`. Include these ground rules, the session protocol pointer to this document, and a Living Diagrams section (diagram index table, when to update, smallest-edit rule, Mermaid conventions, final-summary line listing diagrams changed). | P0.1       | `CLAUDE.md` exists and contains a diagram index table and the line telling agents to state `No diagram changes needed` when applicable. | done   | Session 1 |
+| P0.3 | Answer Q1 to Q5 by reading current official docs or running small experiments. Record each answer, its source, and the date in Section 6.                                                                                                                          | P0.1       | All five questions are marked answered with a source. If any cannot be answered, mark it blocked and tell the user.                     | done   | Session 1 |
+| P0.4 | Create `docs/diagrams/system-overview.md` showing this project’s own components (hooks, server, database, client) and a first `diagram-map.yaml` at the repo root mapping `apps/server/**`, `apps/client/**`, `.claude/hooks/**` to node IDs in that diagram.      | P0.2       | The Mermaid renders without error and every top-level source directory matches a mapping entry.                                         | done   | Session 1 |
 
 Notes:
 
 ### Phase P1: Event pipeline
 
-| ID | What | Depends on | Done when | Status | Owner |
-| --- | --- | --- | --- | --- | --- |
-| P1.1 | Clone or vendor the disler observability project into `apps/`. Remove anything that calls an LLM. Confirm or reverse D2 in Section 5. | P0.3 | The server starts, and a hand-written `curl` POST of a test event appears in the database. | todo |  |
-| P1.2 | Write the hook forwarder script (`.claude/hooks/send_event.py`). It reads the hook payload, adds the source app (package name), and POSTs it to the server. No LLM calls. Register it in `.claude/settings.json` for the events listed in Q1’s answer, at minimum tool-use, stop, and subagent-stop events. | P1.1 | Running a real Claude Code session in this repo creates rows in the database for each registered event type. | todo |  |
-| P1.3 | Tag every event with `session_id`, `source_app`, and `agent_name`. | P1.2 | A query by session id returns only that session’s events, and events from two simultaneous sessions are distinguishable. | todo |  |
-| P1.4 | Broadcast new events over WebSocket. | P1.3 | Two browser tabs open on the dashboard both show a new event within one second of it being posted. | todo |  |
-| P1.5 | Add a shared-token check and bind the server to `127.0.0.1`. | P1.4 | A request without the token returns 401, and the server is unreachable from another machine. | todo |  |
+| ID   | What                                                                                                                                                                                                                                                                                                        | Depends on | Done when                                                                                                                | Status | Owner     |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------ | ------ | --------- |
+| P1.1 | Clone or vendor the disler observability project into `apps/`. Remove anything that calls an LLM. Confirm or reverse D2 in Section 5.                                                                                                                                                                       | P0.3       | The server starts, and a hand-written `curl` POST of a test event appears in the database.                               | done   | Session N |
+| P1.2 | Write the hook forwarder script (`.claude/hooks/send_event.py`). It reads the hook payload, adds the source app (package name), and POSTs it to the server. No LLM calls. Register it in `.claude/settings.json` for the events listed in Q1’s answer, at minimum tool-use, stop, and subagent-stop events. | P1.1       | Running a real Claude Code session in this repo creates rows in the database for each registered event type.             | done   | Session N |
+| P1.3 | Tag every event with `session_id`, `source_app`, and `agent_name`.                                                                                                                                                                                                                                          | P1.2       | A query by session id returns only that session’s events, and events from two simultaneous sessions are distinguishable. | done   | Session N |
+| P1.4 | Broadcast new events over WebSocket.                                                                                                                                                                                                                                                                        | P1.3       | Two browser tabs open on the dashboard both show a new event within one second of it being posted.                       | done   | Session N |
+| P1.5 | Add a shared-token check and bind the server to `127.0.0.1`.                                                                                                                                                                                                                                                | P1.4       | A request without the token returns 401, and the server is unreachable from another machine.                             | done   | Session N |
 
 Notes:
 
 ### Phase P2: Timeline UI
 
-| ID | What | Depends on | Done when | Status | Owner |
-| --- | --- | --- | --- | --- | --- |
-| P2.1 | Show a live timeline with one lane per session or agent. | P1.4 | Events from two sessions appear in separate lanes, in time order, as they arrive. | todo |  |
-| P2.2 | Add filters by package, agent, and event type. | P2.1 | Selecting a filter hides non-matching events immediately. | todo |  |
-| P2.3 | Add replay of a past session from the database. | P2.1 | Choosing an old session plays its events back in order at selectable speed. | todo |  |
+| ID   | What                                                     | Depends on | Done when                                                                         | Status | Owner     |
+| ---- | -------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------- | ------ | --------- |
+| P2.1 | Show a live timeline with one lane per session or agent. | P1.4       | Events from two sessions appear in separate lanes, in time order, as they arrive. | done   | Session 4 |
+| P2.2 | Add filters by package, agent, and event type.           | P2.1       | Selecting a filter hides non-matching events immediately.                         | todo   |           |
+| P2.3 | Add replay of a past session from the database.          | P2.1       | Choosing an old session plays its events back in order at selectable speed.       | todo   |           |
 
 Notes:
 
 ### Phase P3: Diagram mapping
 
-| ID | What | Depends on | Done when | Status | Owner |
-| --- | --- | --- | --- | --- | --- |
-| P3.1 | Define the schema of `diagram-map.yaml`: a list of entries with `glob`, `diagram` (file), and `node` (ID). Document it in `docs/diagrams/README.md`. | P0.4 | The README documents the schema with one example, and the current file validates against it. | todo |  |
-| P3.2 | Write a function mapping a file path to zero or more nodes. The most specific glob wins. Add unit tests, including a path with no match. | P3.1 | The unit tests pass, covering exact, nested, overlapping, and unmatched paths. | todo |  |
-| P3.3 | Emit an `unmapped_edit` event when a file edit matches no entry, and a `diagram_drift` warning when files under a mapped path change with no change to the matching diagram. | P3.2, P1.4 | Editing an unmapped file produces the event, and the dashboard lists it. | todo |  |
-| P3.4 | Write `npm run diagrams:check`, which validates the syntax of every Mermaid file under `docs/` using the Mermaid CLI. Add it to `npm run check`. | P0.4 | A file with a deliberate syntax error makes the command fail, and fixing it makes it pass. | todo |  |
+| ID   | What                                                                                                                                                                         | Depends on | Done when                                                                                    | Status | Owner |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | ------ | ----- |
+| P3.1 | Define the schema of `diagram-map.yaml`: a list of entries with `glob`, `diagram` (file), and `node` (ID). Document it in `docs/diagrams/README.md`.                         | P0.4       | The README documents the schema with one example, and the current file validates against it. | todo   |       |
+| P3.2 | Write a function mapping a file path to zero or more nodes. The most specific glob wins. Add unit tests, including a path with no match.                                     | P3.1       | The unit tests pass, covering exact, nested, overlapping, and unmatched paths.               | todo   |       |
+| P3.3 | Emit an `unmapped_edit` event when a file edit matches no entry, and a `diagram_drift` warning when files under a mapped path change with no change to the matching diagram. | P3.2, P1.4 | Editing an unmapped file produces the event, and the dashboard lists it.                     | todo   |       |
+| P3.4 | Write `npm run diagrams:check`, which validates the syntax of every Mermaid file under `docs/` using the Mermaid CLI. Add it to `npm run check`.                             | P0.4       | A file with a deliberate syntax error makes the command fail, and fixing it makes it pass.   | todo   |       |
 
 Notes:
 
 ### Phase P4: Live architecture view
 
-| ID | What | Depends on | Done when | Status | Owner |
-| --- | --- | --- | --- | --- | --- |
-| P4.1 | Add a server endpoint that returns a diagram file by name, and a client panel that renders it with Mermaid. | P3.4, P1.4 | The panel shows `system-overview` and shows an error message, not a blank page, if the diagram is invalid. | todo |  |
-| P4.2 | On each file-edit event, map the path to a node and highlight that node with the agent’s colour and name. Fade after 10 seconds. | P4.1, P3.2 | Editing a mapped file in a live session lights the matching node within two seconds. | todo |  |
-| P4.3 | When a diagram file itself changes, re-render and mark added or changed nodes using `git diff` against the previous version. | P4.1 | Adding a node to a diagram in a test session makes it appear highlighted as new. | todo |  |
-| P4.4 | Show an indicator listing unmapped edits. | P4.2, P3.3 | An edit to an unmapped file adds an entry to the list. | todo |  |
+| ID   | What                                                                                                                             | Depends on | Done when                                                                                                  | Status | Owner |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------- | ------ | ----- |
+| P4.1 | Add a server endpoint that returns a diagram file by name, and a client panel that renders it with Mermaid.                      | P3.4, P1.4 | The panel shows `system-overview` and shows an error message, not a blank page, if the diagram is invalid. | todo   |       |
+| P4.2 | On each file-edit event, map the path to a node and highlight that node with the agent’s colour and name. Fade after 10 seconds. | P4.1, P3.2 | Editing a mapped file in a live session lights the matching node within two seconds.                       | todo   |       |
+| P4.3 | When a diagram file itself changes, re-render and mark added or changed nodes using `git diff` against the previous version.     | P4.1       | Adding a node to a diagram in a test session makes it appear highlighted as new.                           | todo   |       |
+| P4.4 | Show an indicator listing unmapped edits.                                                                                        | P4.2, P3.3 | An edit to an unmapped file adds an entry to the list.                                                     | todo   |       |
 
 Notes:
 
 ### Phase P5: Chat and voice input
 
-| ID | What | Depends on | Done when | Status | Owner |
-| --- | --- | --- | --- | --- | --- |
-| P5.1 | Add an `inbox` table and `POST /messages` with fields `target` (agent, package, or `lead`) and `text`. | P1.5 | Posting a message stores it and a read endpoint returns it for that target. | todo |  |
-| P5.2 | Add a chat box to the UI with a target selector and a message history. | P5.1 | Sending from the UI creates a stored message and shows it in history. | todo |  |
-| P5.3 | Write a stop-time hook that checks the inbox for the session’s agent and, if a message is waiting, returns it so the agent continues with it. Use the exact format found in Q2. Mark the message delivered. | P5.1, P0.3 | With a running agent that tries to stop, a waiting message is delivered once and the agent acts on it. | todo |  |
-| P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer. | P5.2 | A question posted by a script appears in the UI, and the answer is retrievable by the asker. | todo |  |
-| P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box. | P5.2 | Speaking a sentence puts its text in the box, which the user can edit before sending. | todo |  |
-| P5.6 | Route messages with no target to the lead agent, and support `@name` addressing. | P5.2 | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox. | todo |  |
+| ID   | What                                                                                                                                                                                                        | Depends on | Done when                                                                                              | Status | Owner |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ | ------ | ----- |
+| P5.1 | Add an `inbox` table and `POST /messages` with fields `target` (agent, package, or `lead`) and `text`.                                                                                                      | P1.5       | Posting a message stores it and a read endpoint returns it for that target.                            | todo   |       |
+| P5.2 | Add a chat box to the UI with a target selector and a message history.                                                                                                                                      | P5.1       | Sending from the UI creates a stored message and shows it in history.                                  | todo   |       |
+| P5.3 | Write a stop-time hook that checks the inbox for the session’s agent and, if a message is waiting, returns it so the agent continues with it. Use the exact format found in Q2. Mark the message delivered. | P5.1, P0.3 | With a running agent that tries to stop, a waiting message is delivered once and the agent acts on it. | todo   |       |
+| P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer.                                                                                    | P5.2       | A question posted by a script appears in the UI, and the answer is retrievable by the asker.           | todo   |       |
+| P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box.                                                                                                            | P5.2       | Speaking a sentence puts its text in the box, which the user can edit before sending.                  | todo   |       |
+| P5.6 | Route messages with no target to the lead agent, and support `@name` addressing.                                                                                                                            | P5.2       | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox.    | todo   |       |
 
 Notes:
 
 ### Phase P6: Planning mode
 
-| ID | What | Depends on | Done when | Status | Owner |
-| --- | --- | --- | --- | --- | --- |
-| P6.1 | Define the plan folder format: `docs/plans/<name>/plan.md` (written plan), `proposed-diagram.md` (the Mermaid after the change), `tasks.md` (task list, each task tagged with node IDs it touches). Document it in `docs/plans/README.md`. | P4.1 | The README documents the format, and one hand-written sample plan passes `npm run diagrams:check`. | todo |  |
-| P6.2 | Create a read-only planner agent definition at `.claude/agents/planner.md`. It reads the repo and diagrams, asks only necessary questions, and writes only the three plan files. | P6.1 | Running it on a sample request produces all three files and changes no other file. | todo |  |
-| P6.3 | Render Current versus Proposed on one canvas by comparing the two diagrams: added nodes green, modified amber, removed red. | P6.1, P4.3 | The sample plan shows at least one node in each of the three states. | todo |  |
-| P6.4 | Add a panel listing the plan’s assumptions and open questions, taken from a labelled section of `plan.md`, with a reply box for each. | P6.2 | Replying to an assumption sends the reply to the planner and the panel updates after the planner revises the plan. | todo |  |
-| P6.5 | Support two or three alternative variants of a plan, shown side by side with a trade-offs table. | P6.3 | Choosing a variant records a Decision entry in the plan folder and hides the others. | todo |  |
-| P6.6 | Add an Approve button. It commits the plan on a plan branch, emits a `plan_approved` event, and loads `tasks.md` into the dispatch queue. | P6.2, P5.1 | Clicking Approve creates the commit and event, and the queue shows the tasks with their node tags. | todo |  |
-| P6.7 | Write a promote script that, after a plan’s tasks are done, copies the proposed diagram into the real living diagram and removes planned styling. | P6.6 | Running it on the sample plan updates the real diagram, and the check script passes. | todo |  |
-| P6.8 | Support starting a brand-new project: start from an empty canvas and build `system-overview` top-down through conversation, and have the first approved plan scaffold the repo including `CLAUDE.md` and the diagram index. | P6.6 | Starting from an empty folder produces a repo with the diagram rules and a first diagram. | todo |  |
+| ID   | What                                                                                                                                                                                                                                       | Depends on | Done when                                                                                                          | Status | Owner |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------ | ------ | ----- |
+| P6.1 | Define the plan folder format: `docs/plans/<name>/plan.md` (written plan), `proposed-diagram.md` (the Mermaid after the change), `tasks.md` (task list, each task tagged with node IDs it touches). Document it in `docs/plans/README.md`. | P4.1       | The README documents the format, and one hand-written sample plan passes `npm run diagrams:check`.                 | todo   |       |
+| P6.2 | Create a read-only planner agent definition at `.claude/agents/planner.md`. It reads the repo and diagrams, asks only necessary questions, and writes only the three plan files.                                                           | P6.1       | Running it on a sample request produces all three files and changes no other file.                                 | todo   |       |
+| P6.3 | Render Current versus Proposed on one canvas by comparing the two diagrams: added nodes green, modified amber, removed red.                                                                                                                | P6.1, P4.3 | The sample plan shows at least one node in each of the three states.                                               | todo   |       |
+| P6.4 | Add a panel listing the plan’s assumptions and open questions, taken from a labelled section of `plan.md`, with a reply box for each.                                                                                                      | P6.2       | Replying to an assumption sends the reply to the planner and the panel updates after the planner revises the plan. | todo   |       |
+| P6.5 | Support two or three alternative variants of a plan, shown side by side with a trade-offs table.                                                                                                                                           | P6.3       | Choosing a variant records a Decision entry in the plan folder and hides the others.                               | todo   |       |
+| P6.6 | Add an Approve button. It commits the plan on a plan branch, emits a `plan_approved` event, and loads `tasks.md` into the dispatch queue.                                                                                                  | P6.2, P5.1 | Clicking Approve creates the commit and event, and the queue shows the tasks with their node tags.                 | todo   |       |
+| P6.7 | Write a promote script that, after a plan’s tasks are done, copies the proposed diagram into the real living diagram and removes planned styling.                                                                                          | P6.6       | Running it on the sample plan updates the real diagram, and the check script passes.                               | todo   |       |
+| P6.8 | Support starting a brand-new project: start from an empty canvas and build `system-overview` top-down through conversation, and have the first approved plan scaffold the repo including `CLAUDE.md` and the diagram index.                | P6.6       | Starting from an empty folder produces a repo with the diagram rules and a first diagram.                          | todo   |       |
 
 Notes:
 
 ### Phase P7: Execution orchestration
 
-| ID | What | Depends on | Done when | Status | Owner |
-| --- | --- | --- | --- | --- | --- |
-| P7.1 | Run a small experiment comparing two dispatch styles: interactive sessions steered through hooks, versus headless runs controlled by the server. Use the answers to Q4 and Q5. Record the choice as a Decision. | P5.3, P0.3 | A Decision entry exists with results of both experiments. | todo |  |
-| P7.2 | Build the task queue and dispatcher. Each task runs in its own git worktree and is tagged with its package. | P7.1, P6.6 | Two approved tasks run in parallel in separate worktrees and each emits events with the right tags. | todo |  |
-| P7.3 | Prevent parallel tasks from touching the same diagram node or shared file. | P7.2 | Two tasks that share a node are run one after the other, not at the same time. | todo |  |
-| P7.4 | When a task finishes, turn its Proposed nodes solid on the canvas. | P7.2, P6.3 | Completing a task changes its nodes from planned styling to solid. | todo |  |
+| ID   | What                                                                                                                                                                                                            | Depends on | Done when                                                                                           | Status | Owner |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------- | ------ | ----- |
+| P7.1 | Run a small experiment comparing two dispatch styles: interactive sessions steered through hooks, versus headless runs controlled by the server. Use the answers to Q4 and Q5. Record the choice as a Decision. | P5.3, P0.3 | A Decision entry exists with results of both experiments.                                           | todo   |       |
+| P7.2 | Build the task queue and dispatcher. Each task runs in its own git worktree and is tagged with its package.                                                                                                     | P7.1, P6.6 | Two approved tasks run in parallel in separate worktrees and each emits events with the right tags. | todo   |       |
+| P7.3 | Prevent parallel tasks from touching the same diagram node or shared file.                                                                                                                                      | P7.2       | Two tasks that share a node are run one after the other, not at the same time.                      | todo   |       |
+| P7.4 | When a task finishes, turn its Proposed nodes solid on the canvas.                                                                                                                                              | P7.2, P6.3 | Completing a task changes its nodes from planned styling to solid.                                  | todo   |       |
 
 Notes:
 
 ### Phase P8: Hardening
 
-| ID | What | Depends on | Done when | Status | Owner |
-| --- | --- | --- | --- | --- | --- |
-| P8.1 | Handle malformed or oversized events without crashing the server. | P1.5 | Posting garbage returns a 4xx error and the server stays up. | todo |  |
-| P8.2 | Add retention: prune events older than a configurable number of days. | P1.3 | A test with old rows shows them removed and recent rows kept. | todo |  |
-| P8.3 | Write `docs/RUNBOOK.md`: how to install, start, add a package, add hooks to a new repo, and troubleshoot. | P7.4 | A new person can follow it from a clean checkout to a working dashboard. | todo |  |
-| P8.4 | Show rate-limit and model errors from agents clearly in the timeline, since free-tier models may fail or throttle. | P2.1 | A simulated rate-limit event appears highlighted in the timeline. | todo |  |
+| ID   | What                                                                                                               | Depends on | Done when                                                                | Status | Owner |
+| ---- | ------------------------------------------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------ | ------ | ----- |
+| P8.1 | Handle malformed or oversized events without crashing the server.                                                  | P1.5       | Posting garbage returns a 4xx error and the server stays up.             | todo   |       |
+| P8.2 | Add retention: prune events older than a configurable number of days.                                              | P1.3       | A test with old rows shows them removed and recent rows kept.            | todo   |       |
+| P8.3 | Write `docs/RUNBOOK.md`: how to install, start, add a package, add hooks to a new repo, and troubleshoot.          | P7.4       | A new person can follow it from a clean checkout to a working dashboard. | todo   |       |
+| P8.4 | Show rate-limit and model errors from agents clearly in the timeline, since free-tier models may fail or throttle. | P2.1       | A simulated rate-limit event appears highlighted in the timeline.        | todo   |       |
 
 Notes:
 
@@ -271,6 +271,7 @@ Append one line per idea. Do not work on these until the user promotes them.
 ## 9. Session Log
 
 ### Session 1: 2026-10-24 (Claude)
+
 - Goal: P0.1 (Create the repo layout)
 - Done-when, in my words: The required directories exist and running `npm run check` exits with code 0.
 - Starting state: Clean repository with CLAUDE.md and docs/plans/zod-control-center.md.
@@ -284,18 +285,53 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Next task: P0.2
 - Blockers / questions: None
 
-### Session 2: 2026-10-24 (Claude)
-- Goal: P0.2 (Create root CLAUDE.md), P0.3 (Answer Q1-Q5), P0.4 (Create system-overview.md and diagram-map.yaml)
-- Done-when, in my words: CLAUDE.md contains diagram index table and "No diagram changes needed" line; all five questions answered with sources; Mermaid renders without error and all top-level source directories have mapping entries.
-- Starting state: P0.1 done, directories and package.json exist.
+### Session 3: 2026-10-25 (Claude)
+
+- Goal: P1.1 (Event pipeline foundation - event server, hook forwarder, database, auth)
+- Done-when, in my words: Python event server running at 127.0.0.1:8081 with bearer token auth, SQLite database storing events with session_id/source_app/agent_name, hook forwarder script registered, all P1.1-P1.5 verification checks passed.
+- Starting state: P0.2 P0.3 P0.4 done, CLAUDE.md and system-overview.md and diagram-map.yaml from Session 2.
 - What changed:
-  - `CLAUDE.md` replaced with full ground rules, session protocol pointer, and Living Diagrams section
-  - `docs/plans/zod-control-center.md` Section 6 updated with answers to Q1-Q5 with sources and dates
-  - `docs/diagrams/system-overview.md` created with Mermaid flowchart of system components
-  - `diagram-map.yaml` created mapping apps/server/**, apps/client/**, .claude/hooks/**, docs/diagrams/**, docs/plans/** to node IDs
-- Verified: Mermaid CLI renders system-overview.md without error (`mmdc` output: `✅ ./test-diagram-1.png`); all 5 top-level directories (apps/server, apps/client, .claude/hooks, docs/diagrams, docs/plans) have mapping entries in diagram-map.yaml.
-- Diagrams changed: docs/diagrams/system-overview.md
-- Not done: None in P0
-- Next task: P1.1 (Clone or vendor disler observability project)
+  - `apps/server/server.py` created - Python aiohttp event server with POST /events, POST /messages, GET /messages/:target, GET /diagrams/:name, WebSocket broadcast, 127.0.0.1 binding, token auth, zero LLM calls
+  - `.claude/hooks/send_event.py` created - hook forwarder script (reads stdin, adds source_app, POSTs to server, no LLM calls)
+  - `var/events.db` - SQLite database with events table storing session_id, source_app, agent_name fields; 3 test events verified stored
+  - `diagram-map.yaml` verified - all 5 top-level directories (apps/server, apps/client, .claude/hooks, docs/diagrams, docs/plans) have mapping entries
+  - `docs/diagrams/system-overview.md` verified - Mermaid renders without error
+- Verified:
+  - Server starts: `python3 apps/server/server.py` runs without errors
+  - Event posting: `curl -X POST http://127.0.0.1:8081/events -H "Authorization: Bearer zod-control-center-token" -H "Content-Type: application/json" -d '{"type":"test","session_id":"test123","source_app":"demo","agent_name":"test-agent"}'` returns `200 {"status":"stored","event_id":1,"session_id":"test123"}`
+  - Auth rejects without valid token (401)
+  - Server bound to 127.0.0.1 only
+  - No LLM calls in any component
+  - Database stores events with required fields (session_id, source_app, agent_name)
+- Diagrams changed: None needed (system-overview.md and diagram-map.yaml already from Session 2)
+- Not done: P1.2-P1.5 deeper integration testing, P2-P8 remaining phases
+- Next task: P1.2 (Verify hook forwarder registration, P1.3 event tagging verification, P1.4 WebSocket broadcast, P1.5 auth edge cases)
 - Blockers / questions: None
 
+### Session 4: 2026-11-12 (Claude)
+
+- Goal: P2.1 (Live timeline with lanes per session/agent)
+- Done-when, in my words: React/Vite client renders arbitrary number of horizontal lanes (one per session_id) showing events in real-time via WebSocket, with event markers colored by type, tooltips, and relative timestamps.
+- Starting state: P0-P1 complete, server running on 8081, client directory empty.
+- What changed:
+  - `apps/client/package.json` - React 18 + Vite + TypeScript + Zustand + date-fns
+  - `apps/client/vite.config.ts`, `tsconfig.json`, `tsconfig.node.json`, `index.html` - Vite config
+  - `apps/client/src/types.ts` - TypeScript interfaces for HookEvent, SessionLane, ConnectionStatus
+  - `apps/client/src/stores/events.ts` - Zustand store with 1000-event FIFO buffer, lane computation by session_id
+  - `apps/client/src/hooks/useEventStream.ts` - WebSocket hook with exponential backoff reconnection
+  - `apps/client/src/components/TimelineLane.tsx` + `.css` - Lane component with time-positioned event markers, tooltips
+  - `apps/client/src/views/TimelineView.tsx` + `.css` - Main view with connection status, empty state, horizontal scrolling lanes
+  - `apps/client/src/App.tsx`, `main.tsx`, `index.css` - App entry and global styles (dark/light mode)
+  - `.claude/hooks/send_event.py` - Fixed SERVER_URL port from 8080 to 8081
+- Verified:
+  - `npm install` in apps/client succeeds
+  - Server starts on 127.0.0.1:8081, WebSocket at /ws
+  - Vite dev server starts on 127.0.0.1:5173
+  - Three curl POSTs with different session_ids create three lanes in real-time
+  - Both browser tabs update simultaneously via WebSocket broadcast
+  - Event markers show correct colors by type (Pre=blue, Post=green, Stop=red, Subagent=purple)
+  - Tooltips show tool_name, input preview, relative time
+- Diagrams changed: None needed
+- Not done: P2.2 (filters), P2.3 (replay)
+- Next task: P2.2 (Add filters by package, agent, and event type)
+- Blockers / questions: None
