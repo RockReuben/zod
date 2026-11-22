@@ -96,17 +96,17 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 
 Statuses: `todo`, `in-progress`, `done`, `blocked`.
 
-| Phase | Name                    | Done / Total | Status |
-| ----- | ----------------------- | ------------ | ------ |
-| P0    | Foundations             | 4 / 4        | done   |
-| P1    | Event pipeline          | 5 / 5        | done   |
+| Phase | Name                    | Done / Total | Status      |
+| ----- | ----------------------- | ------------ | ----------- |
+| P0    | Foundations             | 4 / 4        | done        |
+| P1    | Event pipeline          | 5 / 5        | done        |
 | P2    | Timeline UI             | 1 / 3        | in-progress |
 | P3    | Diagram mapping         | 1 / 4        | in-progress |
-| P4    | Live architecture view  | 0 / 4        | todo   |
-| P5    | Chat and voice input    | 0 / 6        | todo   |
-| P6    | Planning mode           | 0 / 8        | todo   |
-| P7    | Execution orchestration | 0 / 4        | todo   |
-| P8    | Hardening               | 0 / 4        | todo   |
+| P4    | Live architecture view  | 0 / 4        | todo        |
+| P5    | Chat and voice input    | 0 / 6        | todo        |
+| P6    | Planning mode           | 0 / 8        | todo        |
+| P7    | Execution orchestration | 0 / 4        | todo        |
+| P8    | Hardening               | 0 / 4        | todo        |
 
 ## 4. Project summary
 
@@ -182,6 +182,7 @@ _Read by the `test-maker` and `diff-reviewer` agents (`.claude/agents/`). Each l
 - Living diagrams under `docs/diagrams/` stay in sync with the code per the Living Diagrams section of `CLAUDE.md` (when to update, smallest-edit rule, Mermaid conventions). `[confirmed]`
 - Review gate: after implementing a task, run `test-maker`, then `diff-reviewer`. A BLOCKING finding from either means the task is not `done`, even if its Done-when passes. (D6) `[confirmed]`
 - Task tables keep the columns ID, What, Depends on, Done when, Status, and Owner. For new tasks, state exact boundary rules in the What cell as `Contract: ...` and name the interfaces the task touches. `[proposed]`
+- Test matrix: not stored as a file. Each test carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`, and the matrix is derived from the interface registry and these tags. Unspecified cells are Open Questions in Section 6. (D8) `[confirmed]`
 
 #### Interface registry (derived, not hand-maintained)
 
@@ -204,6 +205,7 @@ Agents build the registry on demand from these sources, so it cannot drift from 
 - D6: Adopt a review pipeline and a Repository constants section (2026-11-22, migration). Decision: After each task, run `test-maker` then `diff-reviewer`; a BLOCKING finding prevents `done`. Section 4.1 holds repository constants, each tagged `[confirmed]` or `[proposed]`. This edits Sections 2.3, 2.4, and 2.5 and adds Section 4.1, as authorized by the user. Reason: Agents need an explicit contract to test and review against, and the constants were scattered across ground rules, decisions, and task text. Alternatives rejected: leaving constants implicit; putting them in Section 1, which is protected.
 - D7: Derive the interface registry from the living diagram (2026-11-22, migration). Decision: The registry is built on demand from `docs/diagrams/system-overview.md` and `diagram-map.yaml`, plus a short hand-listed set of interfaces a diagram cannot show. Reason: The diagrams are already the source of truth, and a second hand-kept list would drift. Alternatives rejected: a hand-maintained interface table in this document.
 - D8: Python aiohttp server is the stack (2026-11-22, this session). Decision: Section 4 named Bun as default but Session 3 built Python aiohttp; D2 was never confirmed. Adopt Python aiohttp as confirmed stack. Section 4.1 updated: "Server: Python (aiohttp) in apps/server/server.py, started with python3 apps/server/server.py" is now `[confirmed]`. Reason: Working implementation exists, no Bun code present. Alternatives rejected: Bun (would require rewrite), staying ambiguous (blocks tooling decisions).
+- D9: Persist the test matrix as test tags, not a file (2026-11-22, migration). Decision: Every test written by `test-maker` carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`. The matrix is derived from the interface registry (D7), the input classes in `docs/testing-strategy.md`, and these tags. Cells the plan does not answer are recorded as Open Questions and are not tested until answered. Reason: A stored matrix would duplicate the diagram and the tests and would drift from both, and `test-maker` is add-only and cannot overwrite a generated file. Alternatives rejected: a matrix table in this document; a generated matrix file in the repo.
 
 ## 6. Open Questions
 
@@ -251,22 +253,22 @@ Notes:
 
 ### Phase P2: Timeline UI
 
-| ID   | What                                                     | Depends on | Done when                                                                         | Status | Owner     |
-| ---- | -------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------- | ------ | --------- |
-| P2.1 | Show a live timeline with one lane per session or agent. | P1.4       | Events from two sessions appear in separate lanes, in time order, as they arrive. | done   | Session 4 |
-| P2.2 | Add filters by package, agent, and event type.           | P2.1       | Selecting a filter hides non-matching events immediately.                         | in-progress |         |
-| P2.3 | Add replay of a past session from the database.          | P2.1       | Choosing an old session plays its events back in order at selectable speed.       | in-progress |         |
+| ID   | What                                                     | Depends on | Done when                                                                         | Status      | Owner     |
+| ---- | -------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------- | ----------- | --------- |
+| P2.1 | Show a live timeline with one lane per session or agent. | P1.4       | Events from two sessions appear in separate lanes, in time order, as they arrive. | done        | Session 4 |
+| P2.2 | Add filters by package, agent, and event type.           | P2.1       | Selecting a filter hides non-matching events immediately.                         | in-progress |           |
+| P2.3 | Add replay of a past session from the database.          | P2.1       | Choosing an old session plays its events back in order at selectable speed.       | in-progress |           |
 
 Notes:
 
 ### Phase P3: Diagram mapping
 
-| ID   | What                                                                                                                                                                         | Depends on | Done when                                                                                    | Status | Owner |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | ------ | ----- |
-| P3.1 | Define the schema of `diagram-map.yaml`: a list of entries with `glob`, `diagram` (file), and `node` (ID). Document it in `README.md`.                         | P0.4       | The README documents the schema with one example, and the current file validates against it. | done   | Session 6 |
-| P3.2 | Write a function mapping a file path to zero or more nodes. The most specific glob wins. Add unit tests, including a path with no match.                                     | P3.1       | The unit tests pass, covering exact, nested, overlapping, and unmatched paths.               | todo   |       |
-| P3.3 | Emit an `unmapped_edit` event when a file edit matches no entry, and a `diagram_drift` warning when files under a mapped path change with no change to the matching diagram. | P3.2, P1.4 | Editing an unmapped file produces the event, and the dashboard lists it.                     | todo   |       |
-| P3.4 | Write `npm run diagrams:check`, which validates the syntax of every Mermaid file under `docs/` using the Mermaid CLI. Add it to `npm run check`.                             | P0.4       | A file with a deliberate syntax error makes the command fail, and fixing it makes it pass.   | todo   |       |
+| ID   | What                                                                                                                                                                         | Depends on | Done when                                                                                    | Status | Owner     |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | ------ | --------- |
+| P3.1 | Define the schema of `diagram-map.yaml`: a list of entries with `glob`, `diagram` (file), and `node` (ID). Document it in `README.md`.                                       | P0.4       | The README documents the schema with one example, and the current file validates against it. | done   | Session 6 |
+| P3.2 | Write a function mapping a file path to zero or more nodes. The most specific glob wins. Add unit tests, including a path with no match.                                     | P3.1       | The unit tests pass, covering exact, nested, overlapping, and unmatched paths.               | todo   |           |
+| P3.3 | Emit an `unmapped_edit` event when a file edit matches no entry, and a `diagram_drift` warning when files under a mapped path change with no change to the matching diagram. | P3.2, P1.4 | Editing an unmapped file produces the event, and the dashboard lists it.                     | todo   |           |
+| P3.4 | Write `npm run diagrams:check`, which validates the syntax of every Mermaid file under `docs/` using the Mermaid CLI. Add it to `npm run check`.                             | P0.4       | A file with a deliberate syntax error makes the command fail, and fixing it makes it pass.   | todo   |           |
 
 Notes:
 
@@ -439,12 +441,23 @@ Append one line per idea. Do not work on these until the user promotes them.
   - `README.md` - Fixed matching algorithm to "most specific glob wins, top-to-bottom tiebreaker"
   - `docs/plans/zod-control-center.md` - Answered Q6-Q10, added D8 (Python aiohttp confirmed), corrected P2/P3 dashboard and task statuses
   - `apps/server/server.py` - Token now read from ZOD_TOKEN env var, loads .env at startup
-  - `apps/client/vite.config.ts` - Added VITE_ env prefix
+  - `apps/client/vite.config.ts` - Added VITE\_ env prefix
   - `apps/client/src/stores/events.ts` - API_BASE and TOKEN read from import.meta.env
   - `.env` (root) - New random token for server
   - `apps/client/.env` - New random token for client
   - `.gitignore` - Added .env files
-- Verified: Code changes compile, env loading works
+  - `apps/server/tests/test_server.py` - 20 tests (auth, db, endpoints, mutations)
+  - `apps/server/tests/test_websocket.py` - 12 tests (WebSocket connect, broadcast, errors)
+  - `apps/client/tests/stores/events.test.ts` - 14 tests (buildLanesFromEvents, filterEvents, mutations)
+  - `apps/client/tests/stores/replay.test.ts` - 15 tests (animateReplay, replay state)
+  - `apps/client/tests/hooks/useEventStream.test.ts` - 13 tests (WebSocket reconnect logic)
+  - `apps/client/tests/components/FilterBar.test.tsx` - 12 tests (filter dropdowns, ARIA)
+  - `apps/client/tests/components/ReplayControls.test.tsx` - 21 tests (selector, controls bar)
+  - `apps/client/vitest.config.ts`, `apps/server/pytest.ini` - Test infrastructure
+  - `apps/client/.eslintrc.cjs` - ESLint config (legacy)
+  - `apps/client/package.json`, `package.json` - Test commands
+- Verified: `pnpm run check` passes (typecheck + 75 client unit tests + 32 server tests = 107 total)
+- Review: test-maker created 107 tests covering all Session 7 changes; diff-reviewer found 6 findings (3 high: missing eslint config, missing pytest-asyncio, no client tests; 2 medium: token fallback divergence, fragile .env parser; 1 low: token in startup log) — all fixed. BLOCKING findings: None remaining.
 - Diagrams changed: No diagram changes needed
 - Not done: P2.2/P2.3 manual verification, P3.2-P3.4
 - Next task: P2.2/P2.3 manual verification (start server+client, run test.py, test filters and replay)
