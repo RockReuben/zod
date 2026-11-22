@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --version)",
+      "Bash(pnpm run *)",
+      "Bash(python -m pytest apps/server/tests/ -v)",
+      "Bash(python -m pytest apps/server/tests/conftest.py -v)",
+      "Bash(pnpm exec *)",
+      "Bash(pnpm add *)",
+      "Bash(python3 -m pip install pytest-asyncio --quiet)",
+      "Bash(pipx install *)",
+      "Bash(pip install *)",
+      "Bash(python3 -c \"import dotenv; print\\('dotenv available'\\)\")",
+      "Bash(node -e \"import tseslint from 'typescript-eslint'; console.log\\(JSON.stringify\\(tseslint.configs.recommended, null, 2\\)\\)\")",
+      "Bash(pytest)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm test:unit)",
+      "Bash(curl -sL https://gist.github.com/qoomon/5dfcdf8eec66a051ecd85625518cfd13)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  },
+  "skillOverrides": {}
+}

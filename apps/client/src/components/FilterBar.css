@@ -1,0 +1,80 @@
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 24px;
+  background: var(--filter-bg, #ffffff);
+  border-bottom: 1px solid var(--filter-border, #e2e8f0);
+}
+
+@media (prefers-color-scheme: dark) {
+  .filter-bar {
+    --filter-bg: #1e293b;
+    --filter-border: #334155;
+  }
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #475569);
+  white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .filter-label {
+    color: #cbd5e1;
+  }
+}
+
+.filter-select {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid var(--input-border, #cbd5e1);
+  background-color: var(--input-bg, #f8fafc);
+  color: var(--text-primary, #1e293b);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.filter-select:hover {
+  border-color: var(--accent, #3b82f6);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--accent, #3b82f6);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .filter-select {
+    --input-border: #475569;
+    --input-bg: #0f172a;
+    color: #f1f5f9;
+  }
+}
+
+.reset-filters-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.reset-filters-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}

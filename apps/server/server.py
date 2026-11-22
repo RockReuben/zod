@@ -17,10 +17,26 @@ import uuid
 from pathlib import Path
 from aiohttp import web
 
+# Load .env file if it exists
+ENV_PATH = Path(__file__).parent.parent.parent / ".env"
+if ENV_PATH.exists():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(ENV_PATH)
+    except ImportError:
+        # Fallback: simple parser for KEY=VALUE lines
+        for line in ENV_PATH.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                # Strip quotes if present
+                value = value.strip().strip('"').strip("'")
+                os.environ.setdefault(key, value)
+
 # Configuration
 HOST = "127.0.0.1"
 PORT = 8081
-TOKEN = "zod-control-center-token"
+TOKEN = os.environ.get("ZOD_TOKEN", "zod-control-center-token")
 
 # Paths relative to repo root
 REPO_ROOT = Path(__file__).parent.parent.parent
@@ -52,6 +68,18 @@ def init_db():
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid TEXT NOT NULL,
+            target TEXT NOT NULL,
+            text TEXT NOT NULL,
+            session_id TEXT,
+            created_at REAL DEFAULT (CAST(strftime('%s', 'now') AS REAL))
+        )
+        """
+    )
     conn.commit()
     conn.close()
 
@@ -59,11 +87,17 @@ def init_db():
 init_db()
 
 
-async def handle_events(request):
-    """POST /events endpoint - receive hook events."""
-    # Check authentication
+def check_auth(request):
+    """Check bearer token authentication."""
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer ") or auth_header.split(" ")[1] != TOKEN:
+        return False
+    return True
+
+
+async def handle_events(request):
+    """POST /events endpoint - receive hook events."""
+    if not check_auth(request):
         return web.json_response({"error": "Unauthorized"}, status=401)
 
     try:
@@ -127,11 +161,106 @@ async def handle_events(request):
     )
 
 
+async def handle_get_events(request):
+    """GET /events endpoint - retrieve historical events for a session."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    session_id = request.query.get("session_id")
+    if not session_id:
+        return web.json_response({"error": "session_id query parameter required"}, status=400)
+
+    try:
+        limit = int(request.query.get("limit", "1000"))
+        offset = int(request.query.get("offset", "0"))
+    except ValueError:
+        return web.json_response({"error": "Invalid limit or offset"}, status=400)
+
+    conn = sqlite3.connect(str(DATABASE_PATH))
+    conn.row_factory = sqlite3.Row
+
+    # Get total count
+    total_row = conn.execute(
+        "SELECT COUNT(*) as count FROM events WHERE session_id = ?",
+        (session_id,),
+    ).fetchone()
+    total = total_row["count"] if total_row else 0
+
+    # Get events ordered by timestamp ASC
+    rows = conn.execute(
+        """
+        SELECT id, uuid, session_id, source_app, agent_name, event_type, tool_name,
+               tool_input, tool_output, timestamp, transcript_path, created_at
+        FROM events
+        WHERE session_id = ?
+        ORDER BY COALESCE(timestamp, created_at, id) ASC
+        LIMIT ? OFFSET ?
+        """,
+        (session_id, limit, offset),
+    ).fetchall()
+    conn.close()
+
+    events = []
+    for row in rows:
+        events.append({
+            "event_id": row["id"],
+            "uuid": row["uuid"],
+            "session_id": row["session_id"],
+            "source_app": row["source_app"],
+            "agent_name": row["agent_name"],
+            "event_type": row["event_type"],
+            "tool_name": row["tool_name"],
+            "tool_input": json.loads(row["tool_input"]) if row["tool_input"] else {},
+            "tool_output": json.loads(row["tool_output"]) if row["tool_output"] else {},
+            "timestamp": row["timestamp"],
+            "transcript_path": row["transcript_path"],
+            "created_at": row["created_at"],
+        })
+
+    return web.json_response({"events": events, "total": total}, status=200)
+
+
+async def handle_get_sessions(request):
+    """GET /sessions endpoint - list all distinct sessions with metadata."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    conn = sqlite3.connect(str(DATABASE_PATH))
+    conn.row_factory = sqlite3.Row
+
+    rows = conn.execute(
+        """
+        SELECT
+            session_id,
+            MAX(agent_name) as agent_name,
+            MAX(source_app) as source_app,
+            COUNT(*) as event_count,
+            MIN(COALESCE(timestamp, created_at)) as start_time,
+            MAX(COALESCE(timestamp, created_at)) as end_time
+        FROM events
+        GROUP BY session_id
+        ORDER BY start_time DESC
+        """
+    ).fetchall()
+    conn.close()
+
+    sessions = []
+    for row in rows:
+        sessions.append({
+            "session_id": row["session_id"],
+            "agent_name": row["agent_name"] or "unknown",
+            "source_app": row["source_app"] or "unknown",
+            "event_count": row["event_count"],
+            "start_time": row["start_time"],
+            "end_time": row["end_time"],
+        })
+
+    return web.json_response({"sessions": sessions}, status=200)
+
+
 async def handle_messages(request):
     """POST /messages endpoint - send messages to agents."""
-    # Check authentication
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer ") or auth_header.split(" ")[1] != TOKEN:
+    if not check_auth(request):
         return web.json_response({"error": "Unauthorized"}, status=401)
 
     try:
@@ -186,7 +315,7 @@ async def handle_get_diagrams(request):
     """GET /diagrams/:name endpoint - return diagram file."""
     name = request.match_info.get("name", "system-overview")
 
-    diagram_path = PROJECT_ROOT / "docs" / "diagrams" / f"{name}.md"
+    diagram_path = REPO_ROOT / "docs" / "diagrams" / f"{name}.md"
 
     if not diagram_path.exists():
         return web.json_response({"error": "Diagram not found"}, status=404)
@@ -242,15 +371,6 @@ async def websocket_handler(request):
 
 async def main():
     """Start the event server."""
-    app = web.Application()
-
-    # Routes
-    app.router.add_post("/events", handle_events)
-    app.router.add_post("/messages", handle_messages)
-    app.router.add_get("/messages/{target}", handle_get_messages)
-    app.router.add_get("/diagrams/{name}", handle_get_diagrams)
-    app.router.add_get("/ws", websocket_handler)
-
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, HOST, PORT)
@@ -258,7 +378,7 @@ async def main():
 
     print(f"🛰️  Zod Control Center server running at http://{HOST}:{PORT}")
     print(f"📡 WebSocket endpoint: ws://{HOST}:{PORT}/ws")
-    print(f"🔐 Token: {TOKEN}")
+    print(f"🔐 Token: {TOKEN[:8]}... (truncated)")
     print(f"🗄️  Database: {DATABASE_PATH}")
 
     # Keep running
@@ -268,6 +388,31 @@ async def main():
         pass
     finally:
         await runner.cleanup()
+
+
+# Create the aiohttp application at module level for testing
+# (after all handlers are defined)
+app = web.Application()
+app.router.add_post("/events", handle_events)
+app.router.add_get("/events", handle_get_events)
+app.router.add_get("/sessions", handle_get_sessions)
+app.router.add_post("/messages", handle_messages)
+app.router.add_get("/messages/{target}", handle_get_messages)
+app.router.add_get("/diagrams/{name}", handle_get_diagrams)
+app.router.add_get("/ws", websocket_handler)
+
+
+def create_app():
+    """Create a fresh aiohttp application for testing."""
+    app = web.Application()
+    app.router.add_post("/events", handle_events)
+    app.router.add_get("/events", handle_get_events)
+    app.router.add_get("/sessions", handle_get_sessions)
+    app.router.add_post("/messages", handle_messages)
+    app.router.add_get("/messages/{target}", handle_get_messages)
+    app.router.add_get("/diagrams/{name}", handle_get_diagrams)
+    app.router.add_get("/ws", websocket_handler)
+    return app
 
 
 if __name__ == "__main__":

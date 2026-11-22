@@ -22,3 +22,13 @@ export interface SessionLane {
 
 /** Connection status for WebSocket */
 export type ConnectionStatus = 'connected' | 'reconnecting' | 'disconnected' | 'error';
+
+/** Session metadata for replay selector */
+export interface SessionInfo {
+  session_id: string;
+  agent_name: string;
+  source_app: string;
+  event_count: number;
+  start_time: number;
+  end_time: number;
+}

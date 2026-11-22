@@ -1,1 +1,9 @@
 node_modules
+.env
+apps/client/.env
+.vscode/
+apps/client/dist/
+apps/client/test-results/
+apps/server/__pycache__/
+*.pyc
+.pytest_cache/

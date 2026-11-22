@@ -18,23 +18,34 @@ See zod-control-center.md in docs/plans to see what we're building here.
 
 Follow the session protocol in `docs/plans/zod-control-center.md` Section 2.
 
+## Review Pipeline
+
+After implementing a task and before marking it `done`, run the `test-maker` agent and then the `diff-reviewer` agent (definitions in `.claude/agents/`). Both read the Repository constants (Section 4.1) in `docs/plans/zod-control-center.md`.
+
+- A BLOCKING finding from either agent means the task is not `done`, even if its Done-when check passes.
+- Record their Open Question candidates in Section 6 and their Backlog candidates in Section 8. Do not act on them directly.
+- Neither agent may be asked to edit existing files. `test-maker` only adds new test files.
+- Add a `Review:` line to the session log entry.
+
 ## Living Diagrams
 
 The repository maintains living architecture diagrams in `docs/diagrams/` as Mermaid files. These diagrams are the source of truth for the system architecture and must be kept in sync with the code.
 
 ### Diagram Index
 
-| Diagram File | Description | Node IDs |
-|--------------|-------------|----------|
+| Diagram File       | Description                                | Node IDs                        |
+| ------------------ | ------------------------------------------ | ------------------------------- |
 | system-overview.md | High-level system components and data flow | hooks, server, database, client |
 
 ### When to Update Diagrams
 
 Update diagrams when:
+
 - Adding, removing, or renaming a top-level directory under `apps/`, `.claude/`, or `docs/`
 - Changing the data flow between major components
 - Adding a new service, queue, database, or external dependency
 - Modifying the hook event pipeline
+- Adding or removing an interface: a route, event type, hook registration, CLI command, or outbound call (the diagram's edges are also the derived interface registry)
 
 ### Smallest Edit Rule
 
@@ -51,6 +62,7 @@ When updating a diagram, make the smallest possible change that accurately refle
 ### Diagram Change Summary
 
 At the end of every session, include a line in the session log:
+
 ```
 Diagrams changed: <file names, or "No diagram changes needed">
 ```

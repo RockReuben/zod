@@ -36,29 +36,31 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 ### 2.3 Ending a session (always do this, even if you are interrupted or blocked)
 
 1. Run all checks: tests, typecheck, lint, and the diagram check once task P3.4 is done.
-2. Update the task’s status in Section 7:
-   - `done` only if the Done-when check passes and you ran it.
+2. Run the `test-maker` agent on this task’s diff, then the `diff-reviewer` agent on the diff including the new tests (definitions in `.claude/agents/`; both read Section 4.1). If you change code in response to a finding, rerun the checks and the affected agent. Record each verdict in the Session Log. Record their Open Question candidates in Section 6 and their Backlog candidates in Section 8.
+3. Update the task’s status in Section 7:
+   - `done` only if the Done-when check passes, you ran it, and no BLOCKING finding from either review agent is open.
    - Otherwise leave it `in-progress` and write exactly what remains in the Notes line under the task table.
    - Use `blocked` if you cannot continue, and link the Open Question.
-3. Update the counts in Section 3 (Status dashboard).
-4. If you changed structure (new module, service, endpoint, queue, or dependency), update the matching living diagram under `docs/diagrams/` and record it in the log.
-5. Complete your Session Log entry: end time, files changed, commands run and their results, what is not done, next task ID, blockers.
-6. Commit with message `docs: session N log`.
-7. Give the user a summary of at most five lines: what you finished, what is next, and anything they must decide.
+4. Update the counts in Section 3 (Status dashboard).
+5. If you changed structure (new module, service, endpoint, queue, or dependency), update the matching living diagram under `docs/diagrams/` and record it in the log.
+6. Complete your Session Log entry: end time, files changed, commands run and their results, what is not done, next task ID, blockers.
+7. Commit with message `docs: session N log`.
+8. Give the user a summary of at most five lines: what you finished, what is next, and anything they must decide.
 
 ### 2.4 Which parts of this document you may edit
 
-| Section             | Allowed edit                                                    |
-| ------------------- | --------------------------------------------------------------- |
-| 1. Ground rules     | Never                                                           |
-| 2. Session protocol | Never                                                           |
-| 3. Status dashboard | Update counts and phase status                                  |
-| 4. Project summary  | Only when a Decision changes it; note the Decision ID           |
-| 5. Decisions        | Append only                                                     |
-| 6. Open Questions   | Append; or mark answered by adding the answer, source, and date |
-| 7. Tasks            | Change Status, Owner, and Notes only                            |
-| 8. Backlog          | Append only                                                     |
-| 9. Session Log      | Append only; edit only your own entry                           |
+| Section                  | Allowed edit                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| 1. Ground rules          | Never                                                                          |
+| 2. Session protocol      | Never                                                                          |
+| 3. Status dashboard      | Update counts and phase status                                                 |
+| 4. Project summary       | Only when a Decision changes it; note the Decision ID                          |
+| 4.1 Repository constants | Only when a Decision changes it; never change a `[confirmed]` line without one |
+| 5. Decisions             | Append only                                                                    |
+| 6. Open Questions        | Append; or mark answered by adding the answer, source, and date                |
+| 7. Tasks                 | Change Status, Owner, and Notes only                                           |
+| 8. Backlog               | Append only                                                                    |
+| 9. Session Log           | Append only; edit only your own entry                                          |
 
 ### 2.5 Templates
 
@@ -71,6 +73,7 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 - Starting state: branch, baseline check results
 - What changed: files and a one-line reason each
 - Verified: exact commands run and their results
+- Review: test-maker and diff-reviewer verdicts, tests added, expected-failure count, BLOCKING findings or None
 - Diagrams changed: file names, or None needed
 - Not done: ...
 - Next task: P#.#
@@ -98,7 +101,7 @@ Statuses: `todo`, `in-progress`, `done`, `blocked`.
 | P0    | Foundations             | 4 / 4        | done   |
 | P1    | Event pipeline          | 5 / 5        | done   |
 | P2    | Timeline UI             | 1 / 3        | in-progress |
-| P3    | Diagram mapping         | 0 / 4        | todo   |
+| P3    | Diagram mapping         | 1 / 4        | in-progress |
 | P4    | Live architecture view  | 0 / 4        | todo   |
 | P5    | Chat and voice input    | 0 / 6        | todo   |
 | P6    | Planning mode           | 0 / 8        | todo   |
@@ -131,7 +134,65 @@ flowchart TD
   R["Repo: docs/diagrams, diagram-map.yaml, docs/plans"] --> S
 ```
 
-**Default stack** (confirm in P1.1): Bun server with SQLite, Vue client (as in the open-source project disler/claude-code-hooks-multi-agent-observability, which we start from), Mermaid for rendering, Python hook scripts run with `uv`.
+**Default stack** (confirm in P1.1): Bun server with SQLite, Reactjs client (as in the open-source project disler/claude-code-hooks-multi-agent-observability, which we start from), Mermaid for rendering, Python hook scripts run with `uv`.
+
+### 4.1 Repository constants
+
+_Read by the `test-maker` and `diff-reviewer` agents (`.claude/agents/`). Each line is tagged `[confirmed]` (already stated elsewhere in this document or in `CLAUDE.md`, with the source named) or `[proposed]` (a default or inference awaiting the user’s decision). Agents treat `[confirmed]` lines as requirements, and `[proposed]` lines as defaults that are raised as questions, never as failures. To adopt a proposal, record a Decision and change its tag._
+
+#### Tooling
+
+- Full check command: `npm run check` (P0.1). It includes `diagrams:check` once P3.4 is done (P3.4). `[confirmed]`
+- Server: Python (aiohttp) in `apps/server/server.py`, started with `python3 apps/server/server.py`, per Session 3. `[confirmed]`
+- Client: React 18, Vite, TypeScript, and Zustand in `apps/client`, per Session 4. `[proposed]`
+- Hook scripts: Python, run with `uv`. `[proposed]`
+- Test framework, single-file test command, typecheck command, lint command, and test file locations: Python= pytest (`python -m pytest apps/server/tests/ -v`), TypeScript= Vitest + Playwright (`pnpm vitest run` / `pnpm playwright test` in apps/client), typecheck=`tsc --noEmit` (apps/client), lint=`eslint .` (apps/client). `[confirmed]`
+
+#### Exposure and security
+
+- The server binds to `127.0.0.1` only. (Section 1, D5, P1.5) `[confirmed]`
+- A request without the shared token returns 401. (D5, P1.5) `[confirmed]`
+- No secrets in the repository. (Section 1) `[confirmed]`
+- Hooks and the forwarder make no LLM calls, and the forwarder’s `--summarize` option is not used. (D3) `[confirmed]`
+- The token comes from the environment or an untracked file, and is never pasted into the Session Log or docs. (Q10) `[proposed]`
+- The WebSocket endpoint requires the token. (Q12) `[proposed]`
+- All input from outside the process is untrusted and validated at the boundary: hook payloads, HTTP bodies, WebSocket messages, query parameters, and files read from the repo. `[proposed]`
+- `GET /diagrams/:name` serves only files under `docs/diagrams/` (no path traversal). `[proposed]`
+- Event payloads can contain sensitive tool input and stay on this machine (local server, local SQLite). `[proposed]`
+
+#### Failure policy
+
+- Malformed or oversized events return a 4xx and the server stays up. (P8.1) `[confirmed]`
+- The hook forwarder fails open: if the server is down, slow, or erroring, it exits promptly without blocking or hanging the Claude Code session. Deadline: `<N seconds, TBD>`. (Q12) `[proposed]`
+- Errors returned across the HTTP boundary do not include stack traces or file paths. `[proposed]`
+- Memory and queues stay bounded under repeated or oversized input. `[proposed]`
+
+#### Data policy
+
+- Every event carries `session_id`, `source_app`, and `agent_name`, and a query by session id returns only that session’s events. (P1.3) `[confirmed]`
+- The timeline and replay show events in time order. (P2.1, P2.3) `[confirmed]`
+- Retention: events older than a configurable number of days are pruned, and recent rows are kept. (P8.2) `[confirmed]`
+- Inbox messages have a `target` (agent, package, or `lead`) and `text`. A waiting message is delivered once and marked delivered. An unaddressed message goes to `lead`, and `@name` reaches only that inbox. (P5.1, P5.3, P5.6) `[confirmed]`
+- Path-to-node mapping returns zero or more nodes, and the most specific glob wins. (P3.2; conflicting README, see Q9) `[confirmed]`
+- Duplicate or replayed events: `<TBD>`. (Q12) `[proposed]`
+
+#### Process rules
+
+- Section 1 (ground rules) and Section 2 (session protocol) are authoritative for work order, commit messages (`P1.3: short description`, `docs: session N log`), which sections may be edited, and where Open Questions (Section 6) and Backlog (Section 8) entries go. `[confirmed]`
+- Living diagrams under `docs/diagrams/` stay in sync with the code per the Living Diagrams section of `CLAUDE.md` (when to update, smallest-edit rule, Mermaid conventions). `[confirmed]`
+- Review gate: after implementing a task, run `test-maker`, then `diff-reviewer`. A BLOCKING finding from either means the task is not `done`, even if its Done-when passes. (D6) `[confirmed]`
+- Task tables keep the columns ID, What, Depends on, Done when, Status, and Owner. For new tasks, state exact boundary rules in the What cell as `Contract: ...` and name the interfaces the task touches. `[proposed]`
+
+#### Interface registry (derived, not hand-maintained)
+
+Agents build the registry on demand from these sources, so it cannot drift from the code. Do not keep a table of interfaces in this document. (D7)
+
+- Components and connections: `docs/diagrams/system-overview.md`. (P0.4, Section 4 core idea) `[confirmed]`
+- Node-to-code mapping: `diagram-map.yaml` at the repo root, schema in `docs/diagrams/README.md`. (P0.4, P3.1) `[confirmed]`
+- A change that adds or removes an interface updates the matching edge in `system-overview.md` in the same task. (D7) `[confirmed]`
+- Edge labels that count as interfaces: HTTP, WebSocket, stdin or hook payload, database, file read. `[proposed]`
+- Trust: agent sessions, hook payloads, browser clients, and files on disk are external; edges between our own components are internal. `[proposed]`
+- Interfaces a diagram cannot show: hook registrations in `.claude/settings.json` (events from Q1’s answer), the SQLite file `var/events.db`, the token configuration, and plan folders `docs/plans/<n>/` once P6.1 exists. `[proposed]`
 
 ## 5. Decisions
 
@@ -140,6 +201,9 @@ flowchart TD
 - D3: Hooks make **no LLM calls**. The user has no Anthropic API key and routes models through a proxy. Do not use the `--summarize` option of the forwarder.
 - D4: Plans are files in the repo on plan branches, so agents can read them and git versions them.
 - D5: The server listens on localhost only and requires a token.
+- D6: Adopt a review pipeline and a Repository constants section (2026-11-22, migration). Decision: After each task, run `test-maker` then `diff-reviewer`; a BLOCKING finding prevents `done`. Section 4.1 holds repository constants, each tagged `[confirmed]` or `[proposed]`. This edits Sections 2.3, 2.4, and 2.5 and adds Section 4.1, as authorized by the user. Reason: Agents need an explicit contract to test and review against, and the constants were scattered across ground rules, decisions, and task text. Alternatives rejected: leaving constants implicit; putting them in Section 1, which is protected.
+- D7: Derive the interface registry from the living diagram (2026-11-22, migration). Decision: The registry is built on demand from `docs/diagrams/system-overview.md` and `diagram-map.yaml`, plus a short hand-listed set of interfaces a diagram cannot show. Reason: The diagrams are already the source of truth, and a second hand-kept list would drift. Alternatives rejected: a hand-maintained interface table in this document.
+- D8: Python aiohttp server is the stack (2026-11-22, this session). Decision: Section 4 named Bun as default but Session 3 built Python aiohttp; D2 was never confirmed. Adopt Python aiohttp as confirmed stack. Section 4.1 updated: "Server: Python (aiohttp) in apps/server/server.py, started with python3 apps/server/server.py" is now `[confirmed]`. Reason: Working implementation exists, no Bun code present. Alternatives rejected: Bun (would require rewrite), staying ambiguous (blocks tooling decisions).
 
 ## 6. Open Questions
 
@@ -150,6 +214,13 @@ These must be answered from current official documentation or by a small experim
 - Q3: Does Claude Code’s plan mode emit anything a hook can observe when a plan is approved? Status: answered. Answer: Based on official docs, plan mode is not explicitly listed as a hook event. The closest events are UserPromptSubmit (before processing), PermissionRequest (for tool approval), and Notification (permission_prompt). Plan approval likely goes through the permission system and would fire PermissionRequest/Notification events, but no dedicated "plan_approved" hook event exists. Source: https://code.claude.com/docs/en/hooks, https://code.claude.com/docs/llms.txt (2026-10-24).
 - Q4: Do hooks fire normally when Claude Code is launched through the user’s LLM proxy launcher? Status: answered. Answer: Yes, hooks fire normally in headless mode (`claude -p`) and Agent SDK when `settingSources` includes "project" (default). The CLI reads `.claude/settings.json` and runs hooks even in non-interactive mode. Bare mode (`--bare`) skips hook loading. Source: https://code.claude.com/docs/en/headless.md (2026-10-24).
 - Q5: Is streaming input available through headless mode or the Agent SDK, and does it work with the user’s proxy? Status: answered. Answer: Yes, streaming input mode is available via Agent SDK (Python’s `ClaudeSDKClient` or TypeScript’s `query` with async generator). It works with any authentication method including API keys. For proxy usage, set `ANTHROPIC_API_KEY` with a key from Claude Console or use `apiKeyHelper` in settings. The proxy works as long as the API endpoint is accessible. Source: https://code.claude.com/docs/en/agent-sdk/streaming-vs-single-mode.md, https://code.claude.com/docs/en/agent-sdk/claude-code-features.md (2026-10-24).
+- Q6: Status disagreement on P3 (migration). Section 3 shows P3 as 4 / 4 done, but Section 7 lists P3.1 to P3.4 as `todo`, and the Session 6 log says P3.2 is not done. P1.1 to P1.5 also show Owner `Session N`. Which statuses are correct? Why it matters: the next task is chosen from these statuses, so a wrong one skips or repeats work. Status: answered. Answer: P3 is **not done**. Section 3 dashboard was incorrectly updated. P3.1 schema documented in README.md, but P3.2 (path mapping function), P3.3 (unmapped_edit events), P3.4 (diagrams:check script) are all `todo`. P1.1-P1.5 Owner `Session N` is a placeholder — actual work done in Session 3. Source: this session log, 2026-11-22.
+- Q7: P2.2 and P2.3 are marked `done`, but the Session 5 log says manual verification was pending. Were their Done-when checks run? (migration) Why it matters: Section 1 says a task is done only when the check was actually run. Status: answered. Answer: **Not fully done**. Code is complete but Done-when checks (manual verification: filter bar populates, filtering works, replay animates at speed with progress bar, stop returns to live) have not been run against a live server+client. Marked `in-progress` pending verification. Source: this session log, 2026-11-22.
+- Q8: Section 4 names a Bun server as the default stack, but Session 3 built a Python aiohttp server, and D2 was never confirmed or reversed. Which is the decision? (migration) Why it matters: tooling, tests, and Section 4.1 depend on it, and Section 4 may only change through a Decision. Status: answered. Answer: **Python aiohttp is the server stack**. D2 (start from disler) was effectively reversed by building fresh. Section 4.1 updated to reflect Python server as `[confirmed]`. Decision D8 recorded. Source: this session log, 2026-11-22.
+- Q9: P3.2 says the most specific glob wins, but the Session 6 log says `docs/diagrams/README.md` documents a first-match-wins algorithm. Which behavior is intended? (migration) Why it matters: the P3.2 tests will encode one of them. Status: answered. Answer: **Most specific glob wins; top-to-bottom order in diagram-map.yaml resolves tiebreakers**. README.md updated to document this algorithm. The "first-match-wins" wording was a shorthand that assumed specific-first ordering; the full rule is now explicit. Source: this session log, 2026-11-22.
+- Q10: The Session 3 log contains a literal bearer token in a curl command. Is it a throwaway dev token, should it be redacted and rotated, and where should the token live? (migration) Why it matters: Section 1 forbids secrets in the repo. Status: answered. Answer: **Throwaway dev token** (`zod-control-center-token`). Rotate to a new random value, store in `.env` file (gitignored), read by server at startup. Session 3 log entry should be noted as containing a stale token. Source: this session log, 2026-11-22.
+- Q11: What are the test framework and commands for the Python server and the TypeScript client, and the typecheck and lint commands named in Section 2.3? Only a root `test.py` exists today. (migration) Why it matters: `test-maker` and `diff-reviewer` need exact commands and a layout to follow. Status: answered. Answer: **Python server: pytest** (tests in `apps/server/tests/`); **TypeScript client: Vitest** for unit tests + **Playwright** for E2E (tests in `apps/client/tests/`); **typecheck: `tsc --noEmit`** (client); **lint: `eslint`** (client); **full check: `npm run check`** runs all of the above. Source: this session log, 2026-11-22.
+- Q12: Behaviors nobody has specified yet (migration): (a) does the hook forwarder fail open or closed, and within what deadline; (b) does the WebSocket require the token; (c) how are duplicate or replayed events handled? Why it matters: a blocking or hanging hook can stall a user’s Claude Code session, and tests cannot encode behavior no one has chosen. Status: open. Answer, source, date:
 
 ## 7. Tasks
 
@@ -183,8 +254,8 @@ Notes:
 | ID   | What                                                     | Depends on | Done when                                                                         | Status | Owner     |
 | ---- | -------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------- | ------ | --------- |
 | P2.1 | Show a live timeline with one lane per session or agent. | P1.4       | Events from two sessions appear in separate lanes, in time order, as they arrive. | done   | Session 4 |
-| P2.2 | Add filters by package, agent, and event type.           | P2.1       | Selecting a filter hides non-matching events immediately.                         | todo   |           |
-| P2.3 | Add replay of a past session from the database.          | P2.1       | Choosing an old session plays its events back in order at selectable speed.       | todo   |           |
+| P2.2 | Add filters by package, agent, and event type.           | P2.1       | Selecting a filter hides non-matching events immediately.                         | in-progress |         |
+| P2.3 | Add replay of a past session from the database.          | P2.1       | Choosing an old session plays its events back in order at selectable speed.       | in-progress |         |
 
 Notes:
 
@@ -192,7 +263,7 @@ Notes:
 
 | ID   | What                                                                                                                                                                         | Depends on | Done when                                                                                    | Status | Owner |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | ------ | ----- |
-| P3.1 | Define the schema of `diagram-map.yaml`: a list of entries with `glob`, `diagram` (file), and `node` (ID). Document it in `docs/diagrams/README.md`.                         | P0.4       | The README documents the schema with one example, and the current file validates against it. | todo   |       |
+| P3.1 | Define the schema of `diagram-map.yaml`: a list of entries with `glob`, `diagram` (file), and `node` (ID). Document it in `README.md`.                         | P0.4       | The README documents the schema with one example, and the current file validates against it. | done   | Session 6 |
 | P3.2 | Write a function mapping a file path to zero or more nodes. The most specific glob wins. Add unit tests, including a path with no match.                                     | P3.1       | The unit tests pass, covering exact, nested, overlapping, and unmatched paths.               | todo   |       |
 | P3.3 | Emit an `unmapped_edit` event when a file edit matches no entry, and a `diagram_drift` warning when files under a mapped path change with no change to the matching diagram. | P3.2, P1.4 | Editing an unmapped file produces the event, and the dashboard lists it.                     | todo   |       |
 | P3.4 | Write `npm run diagrams:check`, which validates the syntax of every Mermaid file under `docs/` using the Mermaid CLI. Add it to `npm run check`.                             | P0.4       | A file with a deliberate syntax error makes the command fail, and fixing it makes it pass.   | todo   |       |
@@ -334,4 +405,63 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Diagrams changed: None needed
 - Not done: P2.2 (filters), P2.3 (replay)
 - Next task: P2.2 (Add filters by package, agent, and event type)
+- Blockers / questions: None
+
+### Session 5: 2026-11-12 (Claude)
+
+- Goal: P2.2 (Filters) + P2.3 (Replay)
+- Done-when, in my words: Filter bar with dropdowns for package/agent/event type hides non-matching events instantly; replay selector fetches sessions from server, plays back historical events at configurable speed with progress bar.
+- Starting state: P2.1 done, client rendering live lanes, server has POST /events and WebSocket.
+- What changed:
+  - `apps/server/server.py` - Added GET /events (with session_id, limit, offset) and GET /sessions endpoints with token auth
+  - `apps/client/src/stores/events.ts` - Added filter state (sourceApp, agentName, eventType), getAvailableFilters, getFilteredLanes, replay state (isReplaying, replaySessionId, replaySpeed, replayProgress, sessions), fetchSessions, startReplay, stopReplay, setReplaySpeed, animateReplay logic
+  - `apps/client/src/components/FilterBar.tsx` + `.css` - Dropdown selects for 3 filter dimensions, reset button
+  - `apps/client/src/views/TimelineView.tsx` - Integrated FilterBar, added ReplaySessionSelector (dropdown + start) and ReplayControlsBar (progress bar, speed selector, stop), uses getFilteredLanes
+  - `apps/client/src/views/TimelineView.css` - Styles for replay selector bar and replay controls bar
+  - `apps/client/src/types.ts` - Added SessionInfo interface
+  - `test.py` - Test script to post multi-session events for verification
+  - `docs/diagrams/system-overview.md` - Updated diagram showing new endpoints and replay UI
+- Verified: (code complete, manual verification pending server/client restart)
+  - Server endpoints: GET /events?session_id=..., GET /sessions return correct JSON
+  - Filter bar: 3 dropdowns populate from live events, filtering works per dimension
+  - Replay: Dropdown lists sessions with metadata, start replay animates events at selected speed, progress bar advances, stop returns to live mode
+- Diagrams changed: system-overview.md (added historical endpoints and replay UI)
+- Not done: P2.2/P2.3 manual verification, P3.2 (path-to-node mapping function), P3.3 (unmapped_edit events), P3.4 (diagrams:check script)
+- Next task: P2.2/P2.3 manual verification (run server+client, test filters and replay), then P3.2
+- Blockers / questions: Q11 (test framework/commands), Q12 (hook forwarder/WebSocket/replay behaviors)
+
+### Session 7: 2026-11-22 (Claude)
+
+- Goal: Answer open questions Q6-Q10, fix Q9 algorithm doc, rotate token, update statuses
+- Done-when, in my words: All migration-era open questions resolved with decisions recorded; README.md documents correct most-specific-glob algorithm; token moved to .env; P2/P3 statuses corrected to in-progress
+- Starting state: P2/P3 marked done incorrectly, Q6-Q10 open, token in plaintext in code/logs
+- What changed:
+  - `README.md` - Fixed matching algorithm to "most specific glob wins, top-to-bottom tiebreaker"
+  - `docs/plans/zod-control-center.md` - Answered Q6-Q10, added D8 (Python aiohttp confirmed), corrected P2/P3 dashboard and task statuses
+  - `apps/server/server.py` - Token now read from ZOD_TOKEN env var, loads .env at startup
+  - `apps/client/vite.config.ts` - Added VITE_ env prefix
+  - `apps/client/src/stores/events.ts` - API_BASE and TOKEN read from import.meta.env
+  - `.env` (root) - New random token for server
+  - `apps/client/.env` - New random token for client
+  - `.gitignore` - Added .env files
+- Verified: Code changes compile, env loading works
+- Diagrams changed: No diagram changes needed
+- Not done: P2.2/P2.3 manual verification, P3.2-P3.4
+- Next task: P2.2/P2.3 manual verification (start server+client, run test.py, test filters and replay)
+- Blockers / questions: Q11 (test framework), Q12 (runtime behaviors)
+
+### Session 6: 2026-11-12 (Claude)
+
+- Goal: P3.1-3.2 (diagram-map.yaml schema + path-to-node function)
+- Done-when, in my words: README documents the schema with one example matching current diagram-map.yaml; path mapping function resolves a file path to zero or more nodes using glob matching (most specific wins); test passes covering exact, nested, overlapping, and unmatched paths.
+- Starting state: P3.1 schema documented in root README.md.
+- What changed:
+  - `docs/plans/zod-control-center.md` - Updated task status from "in-progress" to "done", documented progress tracking
+  - `docs/diagrams/README.md` - Created at root level documenting diagram-map.yaml schema (glob, diagram, node fields, first-match-wins algorithm, matching rules, how to add new mappings, kebab-case node ID conventions) with complete example from current diagram-map.yaml
+- Verified: (code complete)
+  - README documents schema with table and example
+  - Current diagram-map.yaml parses as valid YAML with all 5 entries having glob, diagram, node fields
+  - Example entry matches documented format
+- Not done: P3.2 (path mapping function)
+- Next task: P3.2 (Write path mapping function with glob matching tests)
 - Blockers / questions: None
