@@ -5,5 +5,9 @@ apps/client/.env
 apps/client/dist/
 apps/client/test-results/
 apps/server/__pycache__/
+apps/server/.pytest_cache/
 *.pyc
 .pytest_cache/
+dist/
+test-results/
+*.log

@@ -8,7 +8,7 @@ import './TimelineView.css';
 
 const REPLAY_SPEEDS = [1, 2, 5, 10];
 
-const formatSessionLabel = (session: SessionInfo): string => {
+export const formatSessionLabel = (session: SessionInfo): string => {
   const date = new Date(session.start_time * 1000);
   const timeStr = date.toLocaleTimeString();
   return `${session.session_id} (${session.source_app}, ${session.agent_name}, ${session.event_count} events, ${timeStr})`;
@@ -136,7 +136,7 @@ interface ReplaySessionSelectorProps {
   disabled: boolean;
 }
 
-function ReplaySessionSelector({ sessions, onSelect, disabled }: ReplaySessionSelectorProps) {
+export function ReplaySessionSelector({ sessions, onSelect, disabled }: ReplaySessionSelectorProps) {
   const [selectedSession, setSelectedSession] = useState<string>('');
 
   const handleStart = () => {
@@ -190,7 +190,7 @@ interface ReplayControlsBarProps {
   onStop: () => void;
 }
 
-function ReplayControlsBar({ progress, speed, onSpeedChange, onStop }: ReplayControlsBarProps) {
+export function ReplayControlsBar({ progress, speed, onSpeedChange, onStop }: ReplayControlsBarProps) {
   return (
     <div className="replay-controls-bar">
       <div className="replay-progress-container">
@@ -199,6 +199,7 @@ function ReplayControlsBar({ progress, speed, onSpeedChange, onStop }: ReplayCon
           <div
             className="replay-progress-fill"
             style={{ width: `${progress}%` } as React.CSSProperties}
+            data-testid="replay-progress-fill"
           />
         </div>
         <div className="replay-progress-text">{Math.round(progress)}%</div>
