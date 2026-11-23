@@ -20,7 +20,7 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 
 1. Read this whole document from top to bottom.
 2. Run `git status` and `git log -5`. Confirm you are on the plan branch or a task branch and that there are no unexplained uncommitted changes. If there are, note them in the Session Log and ask the user before continuing.
-3. Open Section 3 (Status dashboard) and Section 7 (Tasks). Find the **first** task whose status is `in-progress` or `todo` and whose dependencies are all `done`. That is your task for this session.
+3. Open Section 3 (Status dashboard) and Section 7 (Tasks). Find the **first** task whose status is `in-progress` or `todo` and whose dependencies are all `done`. If that task begins a **new phase** (`P#.1`) and the prior phase's Status in Section 3 is not `done` (awaiting human phase sign-off per D14), stop and ask the user to review and approve the completed phase before starting `P#.1`.
 4. Append a new entry to Section 9 (Session Log) using the template in 2.5. Fill in: session number, agent name, date, goal (task IDs), and starting state.
 5. Plan the task. At the same moment you start planning the implementation, start the `test-maker` agent in `spec` mode for this task, in the background (for Medium-Boundary and High tasks only; see Section 4.1). Do not wait for it while you plan, and do not edit code until it has returned. When it returns: commit its new test files as `P#.#: spec tests (pending)`, record its Open Question candidates in Section 6, and stop and ask the user if any is marked `affects Done-when: yes`.
 6. In Section 7, change your task’s status from `todo` to `in-progress` and write the session number in the Owner column.
