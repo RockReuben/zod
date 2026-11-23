@@ -105,7 +105,7 @@ Statuses: `todo`, `in-progress`, `pending-review` (all phase tasks done; awaitin
 | P2    | Timeline UI             | 3 / 3        | done        |
 | P3    | Diagram mapping         | 4 / 4        | done        |
 | P4    | Live architecture view  | 3 / 4        | in-progress |
-| P5    | Chat and voice input    | 5 / 6        | in-progress |
+| P5    | Chat and voice input    | 6 / 7        | in-progress |
 | P6    | Planning mode           | 0 / 8        | todo        |
 | P7    | Execution orchestration | 0 / 4        | todo        |
 | P8    | Hardening               | 0 / 4        | todo        |
@@ -310,8 +310,8 @@ Notes:
 | P5.3 | Write a stop-time hook that checks the inbox for the session’s agent and, if a message is waiting, returns it so the agent continues with it. Use the exact format found in Q2. Mark the message delivered. | P5.1, P0.3 | With a running agent that tries to stop, a waiting message is delivered once and the agent acts on it. | done   | Session 13 |
 | P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer.                                                                                    | P5.2       | A question posted by a script appears in the UI, and the answer is retrievable by the asker.           | done   | Session 14 |
 | P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box.                                                                                                            | P5.2       | Speaking a sentence puts its text in the box, which the user can edit before sending.                  | done   | Session 15 |
-| P5.6 | Route messages with no target to the lead agent, and support `@name` addressing.                                                                                                                            | P5.2       | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox.    | todo   |            |
-| P5.7 | Integrate QuestionsPanel into ChatPanel as inline prompts (questions appear in chat history with answer input, replacing standalone QuestionsPanel). | P5.4       | Agent questions appear in chat with answer box; answering removes prompt from chat. | todo   |            |
+| P5.6 | Route messages with no target to the lead agent, and support `@name` addressing.                                                                                                                            | P5.2       | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox.    | done   | Session 16 |
+| P5.7 | Integrate QuestionsPanel into ChatPanel as inline prompts (questions appear in chat history with answer input, replacing standalone QuestionsPanel).                                                        | P5.4       | Agent questions appear in chat with answer box; answering removes prompt from chat.                    | todo   |            |
 
 Notes:
 
@@ -664,6 +664,21 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Diagrams changed: No diagram changes needed
 - Not done: P5.6 (Message routing)
 - Next task: P5.6 (Route messages with no target to lead agent, support @name addressing)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 16: 2026-11-23 (Claude)
+
+- Goal: P5.6 (Route messages with no target to lead agent, support @name addressing)
+- Done-when, in my words: Messages with empty/missing/null target default to "lead". Messages containing @name in text route to that agent/package (first match wins, overrides explicit target).
+- Starting state: P5.5 done. Server has POST /messages with explicit target field. Client has ChatBox with TargetSelector. No routing logic exists.
+- What changed:
+  - `apps/server/server.py` - Added MENTION_PATTERN regex; updated handle_messages to parse @name from text, default to "lead" when no target, and let @name override explicit target
+  - `apps/server/tests/test_messages.py` - Added TestMessageRouting class with 11 tests covering empty/missing/null target → lead, @name overrides target, @name with no target, multiple @names (first wins), case sensitivity, @name positions (start/middle/end), no @name uses explicit target
+- Verified: `npm run check` passes (typecheck + 191 client unit tests + 141 server tests + diagrams:check = all pass). All 11 new routing tests pass.
+- Review: diff-reviewer PASS WITH NOTES. One low-severity note on email matching behavior (documented as open question). One confirmed improvement: import re moved to top of file.
+- Diagrams changed: No diagram changes needed
+- Not done: P5.7 (Integrate QuestionsPanel into ChatPanel as inline prompts)
+- Next task: P5.7 (Integrate QuestionsPanel into ChatPanel as inline prompts)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
 ### Session 6: 2026-11-12 (Claude)

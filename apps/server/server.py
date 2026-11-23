@@ -12,6 +12,7 @@ Security:
 import asyncio
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -469,8 +470,19 @@ async def handle_get_sessions(request):
     return web.json_response({"sessions": sessions}, status=200)
 
 
+# Regex to match @name mentions in message text
+# Allows alphanumeric, underscore, hyphen, and dot (common in agent/package names)
+MENTION_PATTERN = re.compile(r'@([\w\-\.]+)')
+
+
 async def handle_messages(request):
-    """POST /messages endpoint - send messages to agents."""
+    """POST /messages endpoint - send messages to agents.
+
+    Routing rules:
+    - If target is empty/missing, default to "lead"
+    - If text contains @name, route to that name (first match wins)
+    - @name in text overrides explicit target field
+    """
     if not check_auth(request):
         return web.json_response({"error": "Unauthorized"}, status=401)
 
@@ -479,8 +491,18 @@ async def handle_messages(request):
     except json.JSONDecodeError:
         return web.json_response({"error": "Invalid JSON"}, status=400)
 
-    target = payload.get("target", "")
+    target = (payload.get("target") or "").strip()
     text = payload.get("text", "")
+
+    # Parse @name mentions from text
+    mentions = MENTION_PATTERN.findall(text)
+    if mentions:
+        # First @name mention wins, overrides explicit target
+        target = mentions[0]
+
+    # Default to "lead" if no target after mention parsing
+    if not target:
+        target = "lead"
 
     # Store message in database
     conn = sqlite3.connect(str(DATABASE_PATH))

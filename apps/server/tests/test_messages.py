@@ -323,6 +323,245 @@ class TestConsumeMessage:
         assert data["message"]["text"] == "New undelivered"
 
 
+class TestMessageRouting:
+    """Tests for message routing (P5.6)."""
+
+    @pytest.fixture(autouse=True)
+    def setup_db(self, tmp_path):
+        """Use a temporary database for tests."""
+        import server
+        self.original_db = server.DATABASE_PATH
+        server.DATABASE_PATH = tmp_path / "test_events.db"
+        server.init_db()
+        yield
+        server.DATABASE_PATH = self.original_db
+
+    @pytest.fixture
+    async def client(self):
+        """Create a test client for the aiohttp app."""
+        from server import create_app
+        async with TestClient(TestServer(create_app())) as client:
+            yield client
+
+    @pytest.mark.asyncio
+    async def test_post_message_empty_target_defaults_to_lead(self, client):
+        """POST /messages with empty target defaults to 'lead'."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "target": "",
+                "text": "Hello agent",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "lead"
+
+        # Verify in database
+        import server
+        conn = sqlite3.connect(str(server.DATABASE_PATH))
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT target FROM messages WHERE text = ?", ("Hello agent",)).fetchone()
+        conn.close()
+        assert row["target"] == "lead"
+
+    @pytest.mark.asyncio
+    async def test_post_message_missing_target_defaults_to_lead(self, client):
+        """POST /messages with missing target field defaults to 'lead'."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "text": "Hello agent",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "lead"
+
+        # Verify in database
+        import server
+        conn = sqlite3.connect(str(server.DATABASE_PATH))
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT target FROM messages WHERE text = ?", ("Hello agent",)).fetchone()
+        conn.close()
+        assert row["target"] == "lead"
+
+    @pytest.mark.asyncio
+    async def test_post_message_null_target_defaults_to_lead(self, client):
+        """POST /messages with explicit null target defaults to 'lead'."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "target": None,
+                "text": "Hello agent",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "lead"
+
+        # Verify in database
+        import server
+        conn = sqlite3.connect(str(server.DATABASE_PATH))
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT target FROM messages WHERE text = ?", ("Hello agent",)).fetchone()
+        conn.close()
+        assert row["target"] == "lead"
+
+    @pytest.mark.asyncio
+    async def test_post_message_at_name_overrides_target(self, client):
+        """POST /messages with @name in text routes to that name, overriding target."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "target": "explicit-target",
+                "text": "Hello @billing-agent please check this",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "billing-agent"
+
+        # Verify in database
+        import server
+        conn = sqlite3.connect(str(server.DATABASE_PATH))
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT target FROM messages WHERE text LIKE ?", ("%@billing-agent%",)).fetchone()
+        conn.close()
+        assert row["target"] == "billing-agent"
+
+    @pytest.mark.asyncio
+    async def test_post_message_at_name_with_no_explicit_target(self, client):
+        """POST /messages with @name and no explicit target routes to that name."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "text": "Hey @support-team can you help?",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "support-team"
+
+        # Verify in database
+        import server
+        conn = sqlite3.connect(str(server.DATABASE_PATH))
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT target FROM messages WHERE text LIKE ?", ("%@support-team%",)).fetchone()
+        conn.close()
+        assert row["target"] == "support-team"
+
+    @pytest.mark.asyncio
+    async def test_post_message_multiple_at_names_first_wins(self, client):
+        """POST /messages with multiple @names uses first one."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "target": "explicit",
+                "text": "Hey @first-agent and @second-agent, please check",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "first-agent"
+
+        # Verify in database
+        import server
+        conn = sqlite3.connect(str(server.DATABASE_PATH))
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT target FROM messages WHERE text LIKE ?", ("%@first-agent%",)).fetchone()
+        conn.close()
+        assert row["target"] == "first-agent"
+
+    @pytest.mark.asyncio
+    async def test_post_message_at_name_case_sensitive(self, client):
+        """POST /messages @name matching is case-sensitive (preserves case from text)."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "text": "Hello @BillingTeam please review",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "BillingTeam"
+
+    @pytest.mark.asyncio
+    async def test_post_message_at_name_at_start(self, client):
+        """POST /messages with @name at start of text."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "text": "@devops please deploy",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "devops"
+
+    @pytest.mark.asyncio
+    async def test_post_message_at_name_at_end(self, client):
+        """POST /messages with @name at end of text."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "text": "Please review this @reviewer",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "reviewer"
+
+    @pytest.mark.asyncio
+    async def test_post_message_at_name_in_middle(self, client):
+        """POST /messages with @name in middle of text."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "text": "Hey @qa-team can you test this feature?",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "qa-team"
+
+    @pytest.mark.asyncio
+    async def test_post_message_no_at_name_uses_explicit_target(self, client):
+        """POST /messages without @name uses explicit target."""
+        response = await client.post(
+            "/messages",
+            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            json={
+                "target": "my-package",
+                "text": "This has no mention",
+                "session_id": "test-session"
+            }
+        )
+        assert response.status == 200
+        data = await response.json()
+        assert data["target"] == "my-package"
+
+
 class TestMessagesSchema:
     """Tests for messages table schema (P5.3 migration)."""
 
