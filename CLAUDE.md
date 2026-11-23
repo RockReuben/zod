@@ -20,11 +20,14 @@ Follow the session protocol in `docs/plans/zod-control-center.md` Section 2.
 
 ## Review Pipeline
 
-After implementing a task and before marking it `done`, run the `test-maker` agent and then the `diff-reviewer` agent (definitions in `.claude/agents/`). Both read the Repository constants (Section 4.1) in `docs/plans/zod-control-center.md`.
+Tasks are planned and verified by two agents (definitions in `.claude/agents/`). Both read the Repository constants (Section 4.1) in `docs/plans/zod-control-center.md`, which also holds the risk tiers and the review round cap.
 
-- A BLOCKING finding from either agent means the task is not `done`, even if its Done-when check passes.
-- Record their Open Question candidates in Section 6 and their Backlog candidates in Section 8. Do not act on them directly.
-- Neither agent may be asked to edit existing files. `test-maker` only adds new test files.
+- When you start planning a Medium or High task, start `test-maker` in `spec` mode in the background. Do not edit code until it returns. Commit its tests as `P#.#: spec tests (pending)`.
+- After implementing, run `test-maker` in `verify` mode, then `diff-reviewer`.
+- Never change a spec test's assertions, delete one, or add a skip to it. Remove a `pending:<task id>` marker only when its test passes.
+- A BLOCKING finding, or any remaining `pending:<task id>` marker, means the task is not `done`, even if its Done-when check passes.
+- Record Open Question candidates in Section 6 and Backlog candidates in Section 8. Do not act on them directly. If one is marked `affects Done-when: yes`, stop and ask the user.
+- Neither agent edits existing files. `test-maker` only adds new test files.
 - Add a `Review:` line to the session log entry.
 
 ## Living Diagrams

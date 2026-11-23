@@ -310,7 +310,7 @@ class TestDiagramEndpoints:
     @pytest.mark.asyncio
     async def test_get_diagram_returns_file(self, client):
         """GET /diagrams/:name returns diagram file."""
-        response = await client.get("/diagrams/system-overview")
+        response = await client.get("/diagrams/system-overview", headers={"Authorization": f"Bearer {TOKEN}"})
         # File exists in repo
         assert response.status == 200
         # Response is text/markdown, not JSON
@@ -323,10 +323,25 @@ class TestDiagramEndpoints:
     @pytest.mark.asyncio
     async def test_get_diagram_not_found(self, client):
         """GET /diagrams/:name returns 404 for missing file."""
-        response = await client.get("/diagrams/nonexistent")
+        response = await client.get("/diagrams/nonexistent", headers={"Authorization": f"Bearer {TOKEN}"})
         assert response.status == 404
         data = await response.json()
         assert "Diagram not found" in data["error"]
+
+    @pytest.mark.asyncio
+    async def test_get_diagram_requires_auth(self, client):
+        """GET /diagrams/:name requires valid token."""
+        response = await client.get("/diagrams/system-overview")
+        assert response.status == 401
+
+    @pytest.mark.asyncio
+    async def test_get_diagram_rejects_path_traversal(self, client):
+        """GET /diagrams/:name rejects path traversal attempts in name parameter."""
+        # Encoded slash passes through to handler; .. in name is rejected
+        response = await client.get("/diagrams/subdir%2F..", headers={"Authorization": f"Bearer {TOKEN}"})
+        assert response.status == 400
+        data = await response.json()
+        assert "Invalid diagram name" in data["error"]
 
 
 # Mutation test: these tests should fail if the implementation is broken

@@ -22,9 +22,10 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 2. Run `git status` and `git log -5`. Confirm you are on the plan branch or a task branch and that there are no unexplained uncommitted changes. If there are, note them in the Session Log and ask the user before continuing.
 3. Open Section 3 (Status dashboard) and Section 7 (Tasks). Find the **first** task whose status is `in-progress` or `todo` and whose dependencies are all `done`. That is your task for this session.
 4. Append a new entry to Section 9 (Session Log) using the template in 2.5. Fill in: session number, agent name, date, goal (task IDs), and starting state.
-5. In Section 7, change your task’s status from `todo` to `in-progress` and write the session number in the Owner column.
-6. In the Session Log entry, restate the task’s Done-when check in one line, in your own words.
-7. Run the existing checks (tests, typecheck, lint) and record the baseline result in the log. If checks already fail, record that and do not try to fix unrelated failures.
+5. Plan the task. At the same moment you start planning the implementation, start the `test-maker` agent in `spec` mode for this task, in the background (skip this for Low-risk tasks; see Section 4.1). Do not wait for it while you plan, and do not edit code until it has returned. When it returns: commit its new test files as `P#.#: spec tests (pending)`, record its Open Question candidates in Section 6, and stop and ask the user if any is marked `affects Done-when: yes`.
+6. In Section 7, change your task’s status from `todo` to `in-progress` and write the session number in the Owner column.
+7. In the Session Log entry, restate the task’s Done-when check in one line, in your own words.
+8. Run the existing checks (tests, typecheck, lint) and record the baseline result in the log. If checks already fail, record that and do not try to fix unrelated failures.
 
 ### 2.2 During the session
 
@@ -32,13 +33,14 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 - If you find extra work, add one line to Section 8 (Backlog).
 - If you must make a design choice not already covered, add an entry to Section 5 (Decisions) with your reasoning, then continue with it.
 - If you need information you do not have, add an Open Question and stop.
+- Make each spec test pass by implementing the task. Remove a `pending:P#.#` marker only when its test passes. Never change a spec test's assertions, delete one, or add a skip; if one looks wrong, add an Open Question and stop.
 
 ### 2.3 Ending a session (always do this, even if you are interrupted or blocked)
 
 1. Run all checks: tests, typecheck, lint, and the diagram check once task P3.4 is done.
-2. Run the `test-maker` agent on this task’s diff, then the `diff-reviewer` agent on the diff including the new tests (definitions in `.claude/agents/`; both read Section 4.1). If you change code in response to a finding, rerun the checks and the affected agent. Record each verdict in the Session Log. Record their Open Question candidates in Section 6 and their Backlog candidates in Section 8.
+2. Run the `test-maker` agent in `verify` mode on this task's diff, then the `diff-reviewer` agent on the diff including the new tests (definitions in `.claude/agents/`; both read Section 4.1). Low-risk tasks run only `diff-reviewer`. If you change code in response to a finding, rerun the checks and the affected agent, within the round cap in Section 4.1. Record each verdict in the Session Log. Record their Open Question candidates in Section 6 and their Backlog candidates in Section 8.
 3. Update the task’s status in Section 7:
-   - `done` only if the Done-when check passes, you ran it, and no BLOCKING finding from either review agent is open.
+   - `done` only if the Done-when check passes, you ran it, no `pending:P#.#` marker remains for this task, and no BLOCKING finding from either review agent is open.
    - Otherwise leave it `in-progress` and write exactly what remains in the Notes line under the task table.
    - Use `blocked` if you cannot continue, and link the Open Question.
 4. Update the counts in Section 3 (Status dashboard).
@@ -73,7 +75,7 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 - Starting state: branch, baseline check results
 - What changed: files and a one-line reason each
 - Verified: exact commands run and their results
-- Review: test-maker and diff-reviewer verdicts, tests added, expected-failure count, BLOCKING findings or None
+- Review: risk tier and why; test-maker spec and verify results; diff-reviewer verdict; tests added; pending markers remaining; expected-failure count; BLOCKING findings or None
 - Diagrams changed: file names, or None needed
 - Not done: ...
 - Next task: P#.#
@@ -180,20 +182,21 @@ _Read by the `test-maker` and `diff-reviewer` agents (`.claude/agents/`). Each l
 
 - Section 1 (ground rules) and Section 2 (session protocol) are authoritative for work order, commit messages (`P1.3: short description`, `docs: session N log`), which sections may be edited, and where Open Questions (Section 6) and Backlog (Section 8) entries go. `[confirmed]`
 - Living diagrams under `docs/diagrams/` stay in sync with the code per the Living Diagrams section of `CLAUDE.md` (when to update, smallest-edit rule, Mermaid conventions). `[confirmed]`
-- Review gate: after implementing a task, run `test-maker`, then `diff-reviewer`. A BLOCKING finding from either means the task is not `done`, even if its Done-when passes. (D6) `[confirmed]`
+- Review gate: for Medium and High tasks, `test-maker` runs twice, in `spec` mode when the task is planned (before any code is written) and in `verify` mode after implementing; `diff-reviewer` runs after implementing. A BLOCKING finding from any run means the task is not `done`, even if its Done-when passes. (D6, D10) `[confirmed]`
+- Spec kickoff: when you start planning a Medium or High task, start `test-maker` in `spec` mode in the background, at the same time as you plan. Do not edit code until it has returned. Commit its new test files as `P#.#: spec tests (pending)`. A question it marks `affects Done-when: yes` stops the task until the user answers (Section 1: if unsure, stop). (D10) `[confirmed]`
+- Pending markers: spec tests carry the reason `pending:<task id>`, using the framework's strict-flip expected-failure mechanism where one exists. Remove a marker only when its test passes. Never change a spec test's assertions, delete one, or add a skip to it; if one looks wrong, add an Open Question. A task is not `done` while any `pending:<its task id>` marker remains. `bug:<finding id>` marks a known defect against a confirmed requirement. (D10) `[confirmed]`
+- Test matrix: not stored as a file. Each test carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`, and the matrix is derived from the interface registry and these tags. Unspecified cells are Open Questions in Section 6. (D8) `[confirmed]`
+- Review round cap: after implementing, run at most three review cycles. A cycle is one run of `test-maker` in `verify` mode and `diff-reviewer` on the current diff, followed by fixes for their findings. Spec mode is not a cycle. If a BLOCKING finding is still open after the third cycle, stop: set the task to `blocked`, add an Open Question describing the finding, and end the session. Do not start a fourth cycle or work around the finding. (D9) `[confirmed]`
+- Risk tiers: classify each task by the files it touches. The highest tier touched wins, and when unsure, use the higher tier. Record the tier and the reason in the Session Log. (D9) `[confirmed]`
+  - Low: only docs, diagrams, README text, comments, or tests, or UI styling and copy with no change to data flow. Run `diff-reviewer` only (no spec mode). No user approval beyond the session summary.
+  - Medium: any other code change. Run `test-maker` in `spec` mode when planning and in `verify` mode after implementing, then `diff-reviewer`. The user reads the session summary and findings.
+  - High: any change touching a High-risk path. Same as Medium, and leave the task `in-progress` until the user approves it in writing; only then set `done`.
+- High-risk paths: token and auth handling; the server's bind address and listen configuration; hook forwarder scripts and hook registration in `.claude/settings.json`; database schema, migrations, retention, and pruning; the `/diagrams/:name` endpoint and any other code that reads file paths from requests; inbox delivery; check scripts and CI config; `CLAUDE.md`; `.claude/agents/`. `[proposed]`
+- Tier integrity: the change sets the tier, not the author or the agent. An agent may raise a tier but never lower one the user set, and an agent's approval never replaces the user's approval. (D9) `[confirmed]`
 - Task tables keep the columns ID, What, Depends on, Done when, Status, and Owner. For new tasks, state exact boundary rules in the What cell as `Contract: ...` and name the interfaces the task touches. `[proposed]`
 - Test matrix: not stored as a file. Each test carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`, and the matrix is derived from the interface registry and these tags. Unspecified cells are Open Questions in Section 6. (D8) `[confirmed]`
 - Review round cap: after implementing, run at most three review cycles. A cycle is one run of `test-maker` and `diff-reviewer` on the current diff, followed by fixes for their findings. If a BLOCKING finding is still open after the third cycle, stop: set the task to `blocked`, add an Open Question describing the finding, and end the session. Do not start a fourth cycle or work around the finding. (D9) `[confirmed]`
 - Risk tiers: classify each task by the files it touches. The highest tier touched wins, and when unsure, use the higher tier. Record the tier and the reason in the Session Log. (D9) `[confirmed]`
-  # Create the aiohttp application at module level for testing
-  # Create the aiohttp application at module level for testing
-  # Create the aiohttp application at module level for testing
-  # (after all handlers are defined)
-  app = create_app()
-  # (after all handlers are defined)
-  app = create_app()
-  # (after all handlers are defined)
-  app = create_app()
   - Low: only docs, diagrams, README text, comments, or tests, or UI styling and copy with no change to data flow. Run `diff-reviewer` only. No user approval beyond the session summary.
   - Medium: any other code change. Run `test-maker`, then `diff-reviewer`. The user reads the session summary and findings.
   - High: any change touching a High-risk path. Run both agents, and leave the task `in-progress` until the user approves it in writing; only then set `done`.
@@ -222,7 +225,7 @@ Agents build the registry on demand from these sources, so it cannot drift from 
 - D7: Derive the interface registry from the living diagram (2026-11-22, migration). Decision: The registry is built on demand from `docs/diagrams/system-overview.md` and `diagram-map.yaml`, plus a short hand-listed set of interfaces a diagram cannot show. Reason: The diagrams are already the source of truth, and a second hand-kept list would drift. Alternatives rejected: a hand-maintained interface table in this document.
 - D8: Persist the test matrix as test tags, not a file (2026-11-22, migration). Decision: Every test written by `test-maker` carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`. The matrix is derived from the interface registry (D7), the input classes in `docs/testing-strategy.md`, and these tags. Cells the plan does not answer are recorded as Open Questions and are not tested until answered. Reason: A stored matrix would duplicate the diagram and the tests and would drift from both, and `test-maker` is add-only and cannot overwrite a generated file. Alternatives rejected: a matrix table in this document; a generated matrix file in the repo.
 - D9: Cap review rounds and scale the review gate by risk tier (2026-11-22, migration). Decision: After implementing a task, run at most three review cycles; if a BLOCKING finding is still open after the third, the task becomes `blocked` with an Open Question and the session ends. Tasks are classified Low, Medium, or High by the files they touch, and the tier sets which agents run and whether the user must approve before `done`. The change sets the tier, never the author, and an agent's approval never replaces the user's. Reason: The pipeline had no stop condition, so a fix-and-review loop could oscillate, and it applied the same effort to a README edit as to token handling. This extends the existing three-failures rule in Section 1 to review loops. Alternatives rejected: no cap; one pipeline for every task; letting the implementing agent lower its own tier.
-- D10:
+- D10: Run `test-maker` in `spec` mode when a task is planned (2026-11-22, migration). Decision: At the start of planning for a Medium or High task, `test-maker` runs in the background in `spec` mode and writes pending tests (reason `pending:<task id>`) from this document's contract alone, while the implementer plans. The implementer starts coding only after it returns, commits its tests, and answers or records its questions. Spec tests are never edited, only unmarked as they start to pass, and a task is not `done` while any `pending:` marker remains. `test-maker` then runs again in `verify` mode after implementing. Reason: Tests written from the contract before the code are independent of the implementation, and unspecified behavior surfaces as a question while it is cheap to answer, not after the code exists. The agent already derives expectations from the contract, so it does not need the code. Alternatives rejected: running `test-maker` only after implementation; letting the implementer write its own spec tests; waiting for the implementer's plan before starting the agent, which would couple the tests to the plan and delay both.
 - D11: Python aiohttp server is the stack (2026-11-22, this session). Decision: Section 4 named Bun as default but Session 3 built Python aiohttp; D2 was never confirmed. Adopt Python aiohttp as confirmed stack. Section 4.1 updated: "Server: Python (aiohttp) in apps/server/server.py, started with python3 apps/server/server.py" is now `[confirmed]`. Reason: Working implementation exists, no Bun code present. Alternatives rejected: Bun (would require rewrite), staying ambiguous (blocks tooling decisions).
 
 ## 6. Open Questions

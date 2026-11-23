@@ -479,9 +479,22 @@ async def handle_get_messages(request):
 
 async def handle_get_diagrams(request):
     """GET /diagrams/:name endpoint - return diagram file."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
     name = request.match_info.get("name", "system-overview")
 
+    # Validate name to prevent path traversal
+    if ".." in name or "/" in name or "\\" in name:
+        return web.json_response({"error": "Invalid diagram name"}, status=400)
+
     diagram_path = REPO_ROOT / "docs" / "diagrams" / f"{name}.md"
+
+    # Additional safety: ensure resolved path is under docs/diagrams
+    try:
+        diagram_path.resolve().relative_to((REPO_ROOT / "docs" / "diagrams").resolve())
+    except ValueError:
+        return web.json_response({"error": "Invalid diagram name"}, status=400)
 
     if not diagram_path.exists():
         return web.json_response({"error": "Diagram not found"}, status=404)

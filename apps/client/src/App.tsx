@@ -22,11 +22,13 @@ function App() {
           {/* Future diagrams can be added here */}
         </nav>
       </aside>
-      <main className="main-content">
-        <DiagramPanel diagramName={activeDiagram} />
-      </main>
-      <div className="timeline-section">
-        <TimelineView />
+      <div className="content-column">
+        <main className="main-content">
+          <DiagramPanel diagramName={activeDiagram} />
+        </main>
+        <div className="timeline-section">
+          <TimelineView />
+        </div>
       </div>
     </div>
   );
