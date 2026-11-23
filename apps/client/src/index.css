@@ -164,6 +164,16 @@ body {
 .chat-panel-container {
   position: relative;
   z-index: 10;
+  padding: 0 16px 16px;
+  background: var(--bg-primary);
+}
+
+/* Ensure toggle button is visible when panel is closed */
+.chat-panel-container .chat-panel-toggle {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 768px) {

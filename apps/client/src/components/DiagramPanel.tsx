@@ -94,6 +94,13 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
     svg.insertBefore(styleElement, svg.firstChild);
   }, []);
 
+  // Expose applyHighlights for parent to call if needed
+  useEffect(() => {
+    if (!isLoading && diagramContent && containerRef.current) {
+      applyHighlights(highlights);
+    }
+  }, [highlights, applyHighlights, isLoading, diagramContent]);
+
   const renderDiagram = useCallback(async () => {
     if (!containerRef.current || !diagramContent || renderAttempted.current) {
       return;
@@ -133,7 +140,7 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
       setError(errorMessage);
       onDiagramError?.(errorMessage);
     }
-  }, [diagramContent, diagramName, onDiagramError, highlights, applyHighlights]);
+  }, [diagramContent, diagramName, onDiagramError, applyHighlights]);
 
   useEffect(() => {
     fetchDiagram();
