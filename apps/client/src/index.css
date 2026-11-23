@@ -46,7 +46,6 @@
 html,
 body,
 #root {
-  height: 100%;
   margin: 0;
   padding: 0;
 }
@@ -113,6 +112,7 @@ body {
 .diagram-canvas {
   grid-area: diagram-canvas;
   position: relative;
+  height: 100%;
   overflow: hidden;
   background: var(--bg-primary);
 }
@@ -397,9 +397,11 @@ body {
 .diagram-canvas {
   grid-area: diagram-canvas;
   position: relative;
+  height: 100%;
   overflow: hidden;
   background: var(--bg-primary);
 }
+  height: 100%;
 
 .main-content {
   width: 100%;

@@ -127,6 +127,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  position: relative; /* Required for ::before absolute positioning */
 }
 
 .mermaid-viewer-container svg {
