@@ -605,8 +605,8 @@ Append one line per idea. Do not work on these until the user promotes them.
   - `apps/server/tests/test_messages.py` - 13 new tests for consume endpoint, delivered flag, atomic single-delivery, lead fallback, auth
   - `apps/server/tests/test_stop_hook.py` - 5 tests for hook script behavior (invalid JSON, non-Stop events, server down, missing agent_name)
 - Verified: `npm run check` passes (typecheck + 142 client unit tests + 117 server tests + diagrams:check = all pass). All 13 new message tests and 5 stop hook tests pass.
-- Review: test-maker spec/verify not run (task was Medium-Boundary but review pipeline not triggered); diff-reviewer not yet run. Will run in next session.
-- Diagrams changed: No diagram changes needed
+- Review: diff-reviewer found 1 high-severity Confirmed bug (race condition in consume endpoint), 2 medium issues (import placement, .env parser robustness), 2 elegance notes. All fixed in follow-up commit. Race condition fixed via atomic UPDATE ... RETURNING. Diagram updated with new hook and endpoint edges.
+- Diagrams changed: system-overview.md (added check_inbox_stop.py hook and /messages/consume endpoint)
 - Not done: P5.4 (Agent questions), P5.5 (Voice input), P5.6 (Message routing)
 - Next task: P5.4 (Add a way for an agent to ask the user a question)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
