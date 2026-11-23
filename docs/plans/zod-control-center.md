@@ -104,7 +104,7 @@ Statuses: `todo`, `in-progress`, `pending-review` (all phase tasks done; awaitin
 | P1    | Event pipeline          | 5 / 5        | done        |
 | P2    | Timeline UI             | 3 / 3        | done        |
 | P3    | Diagram mapping         | 4 / 4        | done        |
-| P4    | Live architecture view  | 3 / 4        | in-progress |
+| P4    | Live architecture view  | 4 / 4        | done        |
 | P5    | Chat and voice input    | 7 / 7        | done        |
 | P6    | Planning mode           | 2 / 8        | in-progress |
 | P7    | Execution orchestration | 0 / 4        | todo        |
@@ -321,16 +321,16 @@ Notes:
 
 ### Phase P6: Planning mode
 
-| ID   | What                                                                                                                                                                                                                                       | Depends on | Done when                                                                                                          | Status | Owner |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------ | ------ | ----- |
+| ID   | What                                                                                                                                                                                                                                       | Depends on | Done when                                                                                                          | Status | Owner      |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------ | ------ | ---------- |
 | P6.1 | Define the plan folder format: `docs/plans/<name>/plan.md` (written plan), `proposed-diagram.md` (the Mermaid after the change), `tasks.md` (task list, each task tagged with node IDs it touches). Document it in `docs/plans/README.md`. | P4.1       | The README documents the format, and one hand-written sample plan passes `npm run diagrams:check`.                 | done   | Session 20 |
 | P6.2 | Create a read-only planner agent definition at `.claude/agents/planner.md`. It reads the repo and diagrams, asks only necessary questions, and writes only the three plan files.                                                           | P6.1       | Running it on a sample request produces all three files and changes no other file.                                 | done   | Session 20 |
-| P6.3 | Render Current versus Proposed on one canvas by comparing the two diagrams: added nodes green, modified amber, removed red.                                                                                                                | P6.1, P4.3 | The sample plan shows at least one node in each of the three states.                                               | todo   |       |
-| P6.4 | Add a panel listing the plan’s assumptions and open questions, taken from a labelled section of `plan.md`, with a reply box for each.                                                                                                      | P6.2       | Replying to an assumption sends the reply to the planner and the panel updates after the planner revises the plan. | todo   |       |
-| P6.5 | Support two or three alternative variants of a plan, shown side by side with a trade-offs table.                                                                                                                                           | P6.3       | Choosing a variant records a Decision entry in the plan folder and hides the others.                               | todo   |       |
-| P6.6 | Add an Approve button. It commits the plan on a plan branch, emits a `plan_approved` event, and loads `tasks.md` into the dispatch queue.                                                                                                  | P6.2, P5.1 | Clicking Approve creates the commit and event, and the queue shows the tasks with their node tags.                 | todo   |       |
-| P6.7 | Write a promote script that, after a plan’s tasks are done, copies the proposed diagram into the real living diagram and removes planned styling.                                                                                          | P6.6       | Running it on the sample plan updates the real diagram, and the check script passes.                               | todo   |       |
-| P6.8 | Support starting a brand-new project: start from an empty canvas and build `system-overview` top-down through conversation, and have the first approved plan scaffold the repo including `CLAUDE.md` and the diagram index.                | P6.6       | Starting from an empty folder produces a repo with the diagram rules and a first diagram.                          | todo   |       |
+| P6.3 | Render Current versus Proposed on one canvas by comparing the two diagrams: added nodes green, modified amber, removed red.                                                                                                                | P6.1, P4.3 | The sample plan shows at least one node in each of the three states.                                               | todo   |            |
+| P6.4 | Add a panel listing the plan’s assumptions and open questions, taken from a labelled section of `plan.md`, with a reply box for each.                                                                                                      | P6.2       | Replying to an assumption sends the reply to the planner and the panel updates after the planner revises the plan. | todo   |            |
+| P6.5 | Support two or three alternative variants of a plan, shown side by side with a trade-offs table.                                                                                                                                           | P6.3       | Choosing a variant records a Decision entry in the plan folder and hides the others.                               | todo   |            |
+| P6.6 | Add an Approve button. It commits the plan on a plan branch, emits a `plan_approved` event, and loads `tasks.md` into the dispatch queue.                                                                                                  | P6.2, P5.1 | Clicking Approve creates the commit and event, and the queue shows the tasks with their node tags.                 | todo   |            |
+| P6.7 | Write a promote script that, after a plan’s tasks are done, copies the proposed diagram into the real living diagram and removes planned styling.                                                                                          | P6.6       | Running it on the sample plan updates the real diagram, and the check script passes.                               | todo   |            |
+| P6.8 | Support starting a brand-new project: start from an empty canvas and build `system-overview` top-down through conversation, and have the first approved plan scaffold the repo including `CLAUDE.md` and the diagram index.                | P6.6       | Starting from an empty folder produces a repo with the diagram rules and a first diagram.                          | todo   |            |
 
 Notes:
 
@@ -764,7 +764,7 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Next task: P6.2 (Planner agent definition)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
-### Session 19: 2026-11-23 (Claude) — *Updated with P6.1 sign-off*
+### Session 19: 2026-11-23 (Claude) — _Updated with P6.1 sign-off_
 
 - **P6.1 SIGNED OFF** by user on 2026-11-23. Phase P6 now approved for P6.2+.
 

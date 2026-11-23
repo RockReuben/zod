@@ -150,7 +150,9 @@ export function MermaidViewer({
   }, []);
 
   const renderChart = async () => {
+    console.log('[MermaidViewer] renderChart called, chart length:', chart.length, 'container:', !!containerRef.current);
     if (!containerRef.current || !chart.trim()) {
+      console.log('[MermaidViewer] Early return - no container or empty chart');
       setIsLoading(false);
       return;
     }
@@ -172,6 +174,7 @@ export function MermaidViewer({
 
       // Render the diagram
       const { svg } = await mermaid.render(`mermaid-${uniqueId}-${currentRenderId}`, chart);
+      console.log('[MermaidViewer] mermaid.render returned, SVG length:', svg.length);
 
       if (!isMountedRef.current || currentRenderId !== renderIdRef.current) {
         return;
@@ -181,9 +184,11 @@ export function MermaidViewer({
 
       // Inject SVG
       containerRef.current.innerHTML = svg;
+      console.log('[MermaidViewer] SVG injected into container');
 
       // Get the rendered SVG element
       const svgEl = containerRef.current.querySelector('svg');
+      console.log('[MermaidViewer] SVG element found:', !!svgEl);
       if (!svgEl) {
         throw new Error('Mermaid did not produce an SVG element');
       }
@@ -192,6 +197,7 @@ export function MermaidViewer({
       initializePanZoom(svgEl);
 
       onRendered?.();
+      console.log('[MermaidViewer] renderChart completed successfully');
     } catch (err) {
       if (!isMountedRef.current || currentRenderId !== renderIdRef.current) {
         return;

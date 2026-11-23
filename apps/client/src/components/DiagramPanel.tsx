@@ -23,12 +23,14 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
     setIsLoading(true);
     setError(null);
     try {
+      console.log('[DiagramPanel] Fetching diagram:', `${apiBase}/diagrams/${diagramName}`);
       const response = await fetch(`${apiBase}/diagrams/${diagramName}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
+      console.log('[DiagramPanel] Response status:', response.status);
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error(`Diagram "${diagramName}" not found`);
@@ -40,13 +42,17 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
       }
 
       const content = await response.text();
+      console.log('[DiagramPanel] Response content length:', content.length);
       const code = extractMermaidCode(content);
       if (!code) {
+        console.log('[DiagramPanel] ERROR: No mermaid code extracted');
         throw new Error('No mermaid diagram found in file');
       }
+      console.log('[DiagramPanel] Mermaid code length:', code.length);
       setMermaidCode(code);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.log('[DiagramPanel] ERROR:', errorMessage);
       setError(errorMessage);
       onDiagramError?.(errorMessage);
     } finally {
@@ -58,6 +64,7 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
     // Extract mermaid code block from markdown
     const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/;
     const match = content.match(mermaidRegex);
+    console.log('[DiagramPanel] extractMermaidCode:', match ? 'found' : 'NOT FOUND', match?.[1]?.slice(0, 100));
     return match ? match[1].trim() : null;
   };
 
