@@ -15,59 +15,58 @@ matrix: QuestionsPanel | WebSocket reconnection | invariant
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useEventsStore } from '../../src/stores/events'
 import { QuestionsPanel } from '../../src/components/QuestionsPanel'
 import { HookEvent } from '../../src/types'
 import React from 'react'
 
-// Mock the events store with a complete mock implementation
-const createMockStore = () => ({
-  questions: new Map(),
-  answerQuestion: vi.fn(),
-  dismissQuestion: vi.fn(),
-  events: [],
-  highlights: [],
-  addEvent: vi.fn(),
-  addHighlight: vi.fn(),
-  removeHighlight: vi.fn(),
-  clearExpiredHighlights: vi.fn(),
-  clearAllHighlights: vi.fn(),
-  filters: { sourceApp: 'all', agentName: 'all', eventType: 'all' },
-  replay: { isReplaying: false, replaySessionId: null, replaySpeed: 1, replayProgress: 0, sessions: [] },
-  getLanes: vi.fn(() => []),
-  getFilteredLanes: vi.fn(() => []),
-  getAvailableFilters: vi.fn(() => ({ sourceApps: [], agentNames: [], eventTypes: [] })),
-  clear: vi.fn(),
-  fetchSessions: vi.fn(),
-  startReplay: vi.fn(),
-  stopReplay: vi.fn(),
-  setReplaySpeed: vi.fn(),
-  setReplayProgress: vi.fn(),
-  addHistoricalEvent: vi.fn(),
-  selectedTarget: 'lead',
-  availableTargets: ['lead'],
-  messages: new Map(),
-  sendMessage: vi.fn(),
-  setSelectedTarget: vi.fn(),
-  cycleTarget: vi.fn(),
-  updateAvailableTargets: vi.fn(),
-  fetchMessages: vi.fn(),
-  chatPanelOpen: false,
-  messagePollingInterval: null,
-  toggleChatPanel: vi.fn(),
-  setChatPanelOpen: vi.fn(),
-  startMessagePolling: vi.fn(),
-  stopMessagePolling: vi.fn(),
-  setFilter: vi.fn(),
-  resetFilters: vi.fn(),
-  addMessage: vi.fn(),
-})
-
+// Mock the events store with a complete mock implementation - same pattern as ChatBox.test.tsx
 vi.mock('../../src/stores/events', () => ({
-  useEventsStore: vi.fn((selector) => selector(createMockStore())),
+  useEventsStore: vi.fn((selector) => selector({
+    questions: new Map(),
+    answerQuestion: vi.fn(),
+    dismissQuestion: vi.fn(),
+    events: [],
+    highlights: [],
+    addEvent: vi.fn(),
+    addHighlight: vi.fn(),
+    removeHighlight: vi.fn(),
+    clearExpiredHighlights: vi.fn(),
+    clearAllHighlights: vi.fn(),
+    filters: { sourceApp: 'all', agentName: 'all', eventType: 'all' },
+    replay: { isReplaying: false, replaySessionId: null, replaySpeed: 1, replayProgress: 0, sessions: [] },
+    getLanes: vi.fn(() => []),
+    getFilteredLanes: vi.fn(() => []),
+    getAvailableFilters: vi.fn(() => ({ sourceApps: [], agentNames: [], eventTypes: [] })),
+    clear: vi.fn(),
+    fetchSessions: vi.fn(),
+    startReplay: vi.fn(),
+    stopReplay: vi.fn(),
+    setReplaySpeed: vi.fn(),
+    setReplayProgress: vi.fn(),
+    addHistoricalEvent: vi.fn(),
+    selectedTarget: 'lead',
+    availableTargets: ['lead'],
+    messages: new Map(),
+    sendMessage: vi.fn(),
+    setSelectedTarget: vi.fn(),
+    cycleTarget: vi.fn(),
+    updateAvailableTargets: vi.fn(),
+    fetchMessages: vi.fn(),
+    chatPanelOpen: false,
+    messagePollingInterval: null,
+    toggleChatPanel: vi.fn(),
+    setChatPanelOpen: vi.fn(),
+    startMessagePolling: vi.fn(),
+    stopMessagePolling: vi.fn(),
+    setFilter: vi.fn(),
+    resetFilters: vi.fn(),
+    addMessage: vi.fn(),
+  })),
 }))
 
-const mockUseEventsStore = useEventsStore as vi.Mock
+import { useEventsStore } from '../../src/stores/events'
+
+const mockUseEventsStore = vi.mocked(useEventsStore)
 
 // Test utilities
 const createMockQuestionEvent = (overrides: Partial<HookEvent> = {}): HookEvent => ({
