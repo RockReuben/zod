@@ -100,7 +100,7 @@ describe('ChatPanel', () => {
 
     render(<ChatPanel />);
 
-    expect(screen.getByText('Messages')).toBeInTheDocument();
+    expect(screen.getByText('Chat')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /close chat panel/i })).toBeInTheDocument();
     expect(screen.getByText('Hello from agent')).toBeInTheDocument();
   });

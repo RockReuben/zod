@@ -21,7 +21,6 @@ export function ChatPanel() {
   // Focus chat input when panel opens
   useEffect(() => {
     if (chatPanelOpen) {
-      // Small delay to allow panel animation
       setTimeout(() => {
         const input = panelRef.current?.querySelector('.chat-input') as HTMLTextAreaElement;
         input?.focus();
@@ -30,7 +29,7 @@ export function ChatPanel() {
   }, [chatPanelOpen]);
 
   // Count unread messages for badge
-  const unreadCount = messages.length; // Simplified - could track read state
+  const unreadCount = messages.length;
 
   if (!chatPanelOpen) {
     return (
@@ -56,16 +55,26 @@ export function ChatPanel() {
   return (
     <div className="chat-panel" ref={panelRef} role="region" aria-label="Chat panel">
       <div className="chat-panel-header">
-        <button
-          className="chat-panel-toggle-btn"
-          onClick={toggleChatPanel}
-          aria-label="Close chat panel (Meta+/)"
-          type="button"
-        >
+        <div className="chat-panel-header-left">
           <span className="chat-toggle-icon">💬</span>
           <span className="chat-toggle-label">Chat</span>
-        </button>
-        <div className="chat-panel-resize-handle" aria-label="Resize chat panel" />
+          {unreadCount > 0 && (
+            <span className="chat-toggle-badge" aria-label={`${unreadCount} unread messages`}>
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </div>
+        <div className="chat-panel-header-right">
+          <button
+            className="chat-panel-toggle-btn"
+            onClick={toggleChatPanel}
+            aria-label="Close chat panel (Meta+/)"
+            type="button"
+          >
+            <span className="chat-toggle-icon">💬</span>
+          </button>
+          <div className="chat-panel-resize-handle" aria-label="Resize chat panel" />
+        </div>
       </div>
       <ChatBox />
     </div>
