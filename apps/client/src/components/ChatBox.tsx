@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent } from 'react';
 import { useEventsStore } from '../stores/events';
 import { TargetSelector } from './TargetSelector';
 import { InboxMessage, SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../types';
@@ -8,10 +8,14 @@ import './ChatBox.css';
 export function ChatBox() {
   const selectedTarget = useEventsStore((s) => s.selectedTarget);
   const messagesMap = useEventsStore((s) => s.messages);
-  const messages = messagesMap.get(selectedTarget) || [];
   const sendMessage = useEventsStore((s) => s.sendMessage);
   const cycleTarget = useEventsStore((s) => s.cycleTarget);
   const fetchMessages = useEventsStore((s) => s.fetchMessages);
+
+  const messages = useMemo(
+    () => messagesMap.get(selectedTarget) || [],
+    [messagesMap, selectedTarget]
+  );
 
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -19,7 +23,9 @@ export function ChatBox() {
   const [showTargetHint, setShowTargetHint] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
-  const [isSpeechSupported, setIsSpeechSupported] = useState(true);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(() =>
+    'SpeechRecognition' in window || 'webkitSpeechRecognition' in window
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -60,7 +66,7 @@ export function ChatBox() {
     try {
       await sendMessage(selectedTarget, text);
       setInputValue('');
-    } catch (e) {
+    } catch {
       setError('Failed to send message. Check connection and try again.');
     } finally {
       setIsSending(false);
@@ -80,12 +86,6 @@ export function ChatBox() {
     setTimeout(() => setShowTargetHint(false), 1500);
   };
 
-  // Initialize speech recognition support check
-  useEffect(() => {
-    const hasSpeechRecognition = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
-    setIsSpeechSupported(hasSpeechRecognition);
-  }, []);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -99,14 +99,14 @@ export function ChatBox() {
   const startListening = useCallback(() => {
     if (isListening || !isSpeechSupported || recognitionRef.current) return;
 
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    const SpeechRecognitionCtor = window.SpeechRecognition || (window as Window & { webkitSpeechRecognition: { new (): SpeechRecognition } }).webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) {
       setIsSpeechSupported(false);
       setSpeechError('Speech recognition not supported in this browser');
       return;
     }
 
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionCtor();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
@@ -126,6 +126,7 @@ export function ChatBox() {
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       setIsListening(false);
+      recognitionRef.current = null;
       const errorMessages: Record<string, string> = {
         'not-allowed': 'Microphone permission denied',
         'no-speech': 'No speech detected',
@@ -144,7 +145,7 @@ export function ChatBox() {
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, [isListening, isSpeechSupported]);
+  }, [isListening, isSpeechSupported, setInputValue, setSpeechError, setIsListening]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
