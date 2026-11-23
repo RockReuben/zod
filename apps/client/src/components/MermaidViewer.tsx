@@ -52,7 +52,6 @@ export function MermaidViewer({
   const panZoomRef = useRef<ReturnType<typeof svgPanZoom> | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const renderIdRef = useRef(0);
-  const isMountedRef = useRef(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -235,21 +234,11 @@ export function MermaidViewer({
 
   // Render when chart or renderKey changes
   useEffect(() => {
-    isMountedRef.current = true;
     renderChart();
     return () => {
-      isMountedRef.current = false;
       destroyPanZoom();
     };
   }, [chart, renderKey, showGrid, gridColor, gridThickness]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-      destroyPanZoom();
-    };
-  }, []);
 
   // Loading state
   if (isLoading) {
