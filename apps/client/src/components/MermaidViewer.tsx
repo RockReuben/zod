@@ -185,10 +185,18 @@ export function MermaidViewer({
       // Inject SVG
       containerRef.current.innerHTML = svg;
       console.log('[MermaidViewer] SVG injected into container');
+      console.log('[MermaidViewer] Container innerHTML length:', containerRef.current.innerHTML.length);
 
       // Get the rendered SVG element
       const svgEl = containerRef.current.querySelector('svg');
       console.log('[MermaidViewer] SVG element found:', !!svgEl);
+      if (svgEl) {
+        console.log('[MermaidViewer] SVG element:', svgEl.tagName, svgEl.id, svgEl.getAttribute('width'), svgEl.getAttribute('height'));
+        console.log('[MermaidViewer] SVG viewBox:', svgEl.getAttribute('viewBox'));
+        console.log('[MermaidViewer] SVG style:', svgEl.style.cssText);
+      } else {
+        console.log('[MermaidViewer] Container innerHTML preview:', containerRef.current.innerHTML.slice(0, 200));
+      }
       if (!svgEl) {
         throw new Error('Mermaid did not produce an SVG element');
       }
