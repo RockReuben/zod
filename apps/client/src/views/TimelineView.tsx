@@ -186,7 +186,7 @@ export function TimelineView() {
           <ul className="timeline-events">
             {sortedEvents.map((event, index) => (
               <TimelineEventRow
-                key={`${event.event_id}-${event.session_id}`}
+                key={`${event.uuid || event.event_id}-${event.session_id}-${index}`}
                 event={event}
                 isLast={index === sortedEvents.length - 1}
               />

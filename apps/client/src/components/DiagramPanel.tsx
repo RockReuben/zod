@@ -72,17 +72,33 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
 
     if (highlights.length === 0) return;
 
-    // Build CSS for highlights
+    // Get the SVG's ID to construct the mermaid-generated node IDs
+    // Mermaid generates IDs like: {svgId}-flowchart-node-{nodeName}-{index}
+    const svgId = svgEl.id || 'mermaid-svg';
+    const prefix = `${svgId}-flowchart`;
+
+    // Build CSS for highlights using the mermaid-generated ID pattern
     const styleRules = highlights.map((h) => {
-      const nodeId = `node-${h.node}`;
+      // Match any element whose ID ends with -flowchart-node-{nodeName}-{number}
+      // Using attribute selector: [id$="suffix"] matches elements whose ID ends with suffix
       return `
-        #${nodeId} {
+        [id$="-flowchart-node-${h.node}-0"],
+        [id$="-flowchart-node-${h.node}-1"],
+        [id$="-flowchart-node-${h.node}-2"],
+        [id$="-flowchart-node-${h.node}-3"],
+        [id$="-flowchart-node-${h.node}-4"],
+        [id$="-flowchart-node-${h.node}-5"] {
           stroke: ${h.color} !important;
           stroke-width: 3px !important;
           filter: drop-shadow(0 0 6px ${h.color}) !important;
           transition: stroke 0.3s, filter 0.3s;
         }
-        #${nodeId} * {
+        [id$="-flowchart-node-${h.node}-0"] *,
+        [id$="-flowchart-node-${h.node}-1"] *,
+        [id$="-flowchart-node-${h.node}-2"] *,
+        [id$="-flowchart-node-${h.node}-3"] *,
+        [id$="-flowchart-node-${h.node}-4"] *,
+        [id$="-flowchart-node-${h.node}-5"] * {
           stroke: ${h.color} !important;
         }
       `;
@@ -145,17 +161,17 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
       <div className="diagram-panel-inner" style={{ flex: 1, height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
         <MermaidViewer
           chart={mermaidCode}
-          key={String(renderKeyRef.current)}
+          renderKey={String(renderKeyRef.current)}
           onError={onDiagramError}
           onRendered={handleRendered}
           wrapperClass="mermaid-viewer-wrapper"
           containerClass="mermaid-viewer-container"
           testId="diagram-container"
-          asBackground={true}
+          asBackground={false}
           showGrid={true}
           gridColor="#334155"
           gridThickness={1}
-          backgroundOpacity={0.12}
+          backgroundOpacity={1}
         />
       </div>
     </div>

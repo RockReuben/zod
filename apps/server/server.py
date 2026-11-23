@@ -159,13 +159,14 @@ async def handle_events(request):
     # Store in database
     conn = sqlite3.connect(str(DATABASE_PATH))
     try:
+        event_uuid = str(uuid.uuid4())
         conn.execute(
             """
             INSERT INTO events (uuid, session_id, source_app, agent_name, event_type, tool_name, tool_input, tool_output, timestamp, transcript_path)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
-                str(uuid.uuid4()),
+                event_uuid,
                 session_id,
                 source_app,
                 agent_name,
@@ -188,6 +189,7 @@ async def handle_events(request):
     event_data = {
         "type": "event",
         "event_id": last_id,
+        "uuid": event_uuid,
         "session_id": session_id,
         "source_app": source_app,
         "agent_name": agent_name,
@@ -312,13 +314,14 @@ async def emit_diagram_event(
 
     conn = sqlite3.connect(str(DATABASE_PATH))
     try:
+        event_uuid = str(uuid.uuid4())
         conn.execute(
             """
             INSERT INTO events (uuid, session_id, source_app, agent_name, event_type, tool_name, tool_input, tool_output, timestamp, transcript_path)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
-                str(uuid.uuid4()),
+                event_uuid,
                 session_id,
                 source_app,
                 agent_name,
@@ -343,6 +346,7 @@ async def emit_diagram_event(
     event_data = {
         "type": "event",
         "event_id": event_id,
+        "uuid": event_uuid,
         "session_id": session_id,
         "source_app": source_app,
         "agent_name": agent_name,

@@ -10,7 +10,7 @@ interface MermaidViewerProps {
   /** The raw mermaid diagram code (not markdown-wrapped) */
   chart: string;
   /** Optional unique key to force re-render when chart changes */
-  key?: string;
+  renderKey?: string;
   /** Optional callback when render fails */
   onError?: (error: string) => void;
   /** Optional callback when render succeeds */
@@ -35,7 +35,7 @@ interface MermaidViewerProps {
 
 export function MermaidViewer({
   chart,
-  key,
+  renderKey,
   onError,
   onRendered,
   wrapperClass = 'mermaid-viewer-wrapper',
@@ -206,7 +206,7 @@ export function MermaidViewer({
     }
   };
 
-  // Render when chart or key changes
+  // Render when chart or renderKey changes
   useEffect(() => {
     isMountedRef.current = true;
     renderChart();
@@ -214,7 +214,7 @@ export function MermaidViewer({
       isMountedRef.current = false;
       destroyPanZoom();
     };
-  }, [chart, key, showGrid, gridColor, gridThickness]);
+  }, [chart, renderKey, showGrid, gridColor, gridThickness]);
 
   // Cleanup on unmount
   useEffect(() => {
