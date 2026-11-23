@@ -76,6 +76,8 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
     // Mermaid generates IDs like: {svgId}-flowchart-node-{nodeName}-{index}
     const svgId = svgEl.id || 'mermaid-svg';
     const prefix = `${svgId}-flowchart`;
+    // prefix is used in style rules below
+    void prefix;
 
     // Build CSS for highlights using the mermaid-generated ID pattern
     const styleRules = highlights.map((h) => {

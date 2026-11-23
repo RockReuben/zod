@@ -2,6 +2,7 @@
 export interface HookEvent {
   type: 'event';
   event_id: number;
+  uuid: string;
   session_id: string;
   source_app: string;
   agent_name: string;
