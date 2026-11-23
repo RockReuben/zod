@@ -141,7 +141,12 @@
     background: #1e1e2e;
   }
 
-  /* Use invert + hue-rotate for dark mode, but only on the mermaid SVG */
+  /*
+   * NOTE: The invert/hue-rotate filter can make the diagram appear as a uniform color
+   * if the SVG has a dark background. Disabled for now to debug visibility.
+   * Enable once diagram renders properly.
+   */
+  /*
   .mermaid-viewer-container svg {
     filter: invert(1) hue-rotate(180deg);
   }
@@ -150,11 +155,32 @@
   .mermaid-viewer-container svg foreignObject {
     filter: invert(1) hue-rotate(180deg);
   }
+  */
 }
 
 /* Light mode - ensure mermaid renders correctly */
 @media (prefers-color-scheme: light) {
   .diagram-panel {
     background: #ffffff;
+  }
+}
+
+/* Add CSS-based grid fallback since mermaid grid may not be supported */
+.mermaid-viewer-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, #334155 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  opacity: 0.15;
+  z-index: -1;
+}
+
+@media (prefers-color-scheme: light) {
+  .mermaid-viewer-container::before {
+    background-image: radial-gradient(circle, #94a3b8 1px, transparent 1px);
+    opacity: 0.1;
   }
 }
