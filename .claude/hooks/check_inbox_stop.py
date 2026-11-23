@@ -10,6 +10,7 @@ If no message or server error, fails open (exits 0 with empty JSON).
 
 import json
 import os
+import shlex
 import sys
 import urllib.request
 import urllib.error
@@ -91,7 +92,7 @@ def main():
         text = message.get("text", "")
         output = {
             "decision": "block",
-            "reason": f"Inbox message received: {text}",
+            "reason": "Inbox message waiting",
             "hookSpecificOutput": {
                 "hookEventName": "Stop",
                 "additionalContext": text,

@@ -14,6 +14,7 @@ import json
 import os
 import sqlite3
 import sys
+import time
 import uuid
 from pathlib import Path
 from aiohttp import web
@@ -519,29 +520,33 @@ async def handle_consume_message(request):
     if not target:
         return web.json_response({"error": "target field required"}, status=400)
 
+    now = time.time()
+
     conn = sqlite3.connect(str(DATABASE_PATH))
     conn.row_factory = sqlite3.Row
 
-    # Find the oldest undelivered message for this target or lead
+    # Atomic consume: UPDATE the oldest undelivered message and RETURNING the row
+    # This avoids race conditions between SELECT and UPDATE
     row = conn.execute(
         """
-        SELECT id, uuid, target, text, session_id, created_at
-        FROM messages
-        WHERE delivered = 0 AND (target = ? OR target = 'lead')
-        ORDER BY created_at ASC
-        LIMIT 1
+        UPDATE messages
+        SET delivered = 1, delivered_at = ?
+        WHERE id = (
+            SELECT id
+            FROM messages
+            WHERE delivered = 0 AND (target = ? OR target = 'lead')
+            ORDER BY created_at ASC, id ASC
+            LIMIT 1
+        )
+        RETURNING id, uuid, target, text, session_id, created_at
         """,
-        (target,),
+        (now, target),
     ).fetchone()
 
+    conn.commit()
+    conn.close()
+
     if row:
-        # Mark as delivered
-        import time
-        conn.execute(
-            "UPDATE messages SET delivered = 1, delivered_at = ? WHERE id = ?",
-            (time.time(), row["id"]),
-        )
-        conn.commit()
         message = {
             "id": row["id"],
             "uuid": row["uuid"],
@@ -550,10 +555,8 @@ async def handle_consume_message(request):
             "session_id": row["session_id"],
             "created_at": row["created_at"],
         }
-        conn.close()
         return web.json_response({"message": message}, status=200)
     else:
-        conn.close()
         return web.json_response({"message": None}, status=200)
 
 
