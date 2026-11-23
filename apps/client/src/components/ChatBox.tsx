@@ -97,7 +97,7 @@ export function ChatBox() {
   }, []);
 
   const startListening = useCallback(() => {
-    if (isListening || !isSpeechSupported) return;
+    if (isListening || !isSpeechSupported || recognitionRef.current) return;
 
     const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {

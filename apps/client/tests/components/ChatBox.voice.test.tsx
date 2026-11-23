@@ -389,6 +389,11 @@ describe('ChatBox - Voice Input (P5.5)', () => {
 
     await userEvent.click(micButton);
 
+    // Simulate onstart callback being called by SpeechRecognition
+    act(() => {
+      mockSpeechRecognition!.onstart!({} as Event);
+    });
+
     // Should show pressed/listening state
     expect(micButton).toHaveAttribute('aria-pressed', 'true');
   });
@@ -459,6 +464,11 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     const micButton = screen.getByRole('button', { name: /start voice input|microphone/i });
     await userEvent.click(micButton);
 
+    // Simulate onstart callback being called by SpeechRecognition
+    act(() => {
+      mockSpeechRecognition!.onstart!({} as Event);
+    });
+
     // Should have aria-live or similar for status announcements
     // or the button itself should convey state via aria-pressed
     expect(micButton).toHaveAttribute('aria-pressed', 'true');
@@ -467,23 +477,25 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 9. Works alongside existing keyboard shortcuts
   // ============================================================
-  it('does not interfere with Meta+K focus shortcut (invariant)', () => {
+  it('does not interfere with Meta+K focus shortcut (invariant)', async () => {
     // matrix: ChatBox | invariant | invariant
-    const useShortcut = vi.mocked(require('../../src/hooks/useKeybindings').useShortcut);
+    const { useShortcut } = await import('../../src/hooks/useKeybindings');
+    const useShortcutMock = vi.mocked(useShortcut);
 
     render(<ChatBox />);
 
     // Verify focusChat shortcut is still registered (invariant: existing shortcuts work)
-    expect(useShortcut).toHaveBeenCalledWith('focusChat', expect.any(Function));
+    expect(useShortcutMock).toHaveBeenCalledWith('focusChat', expect.any(Function));
   });
 
-  it('does not interfere with Meta+Shift+K cycle target shortcut (invariant)', () => {
+  it('does not interfere with Meta+Shift+K cycle target shortcut (invariant)', async () => {
     // matrix: ChatBox | invariant | invariant
-    const useShortcut = vi.mocked(require('../../src/hooks/useKeybindings').useShortcut);
+    const { useShortcut } = await import('../../src/hooks/useKeybindings');
+    const useShortcutMock = vi.mocked(useShortcut);
 
     render(<ChatBox />);
 
-    expect(useShortcut).toHaveBeenCalledWith('cycleChatTarget', expect.any(Function));
+    expect(useShortcutMock).toHaveBeenCalledWith('cycleChatTarget', expect.any(Function));
   });
 
   // ============================================================
