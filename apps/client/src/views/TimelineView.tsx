@@ -1,12 +1,63 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useEventStream } from '../hooks/useEventStream';
 import { useEventsStore } from '../stores/events';
 import { TimelineLane } from '../components/TimelineLane';
 import { FilterBar } from '../components/FilterBar';
-import { ConnectionStatus, SessionInfo } from '../types';
+import { ConnectionStatus, SessionInfo, isDiagramEvent } from '../types';
 import './TimelineView.css';
 
 const REPLAY_SPEEDS = [1, 2, 5, 10];
+
+function DiagramEventsIndicator() {
+  const events = useEventsStore((s) => s.events);
+  const diagramEvents = useMemo(() => {
+    return events
+      .filter((e) => isDiagramEvent(e.event_type))
+      .map((e) => ({
+        event: e,
+        diagram: e.tool_input?.diagram as string | undefined,
+        node: e.tool_input?.node as string | undefined,
+        reason: e.tool_input?.reason as string | undefined,
+      }));
+  }, [events]);
+
+  if (diagramEvents.length === 0) return null;
+
+  // Count by type
+  const unmappedCount = diagramEvents.filter((d) => d.event.event_type === 'unmapped_edit').length;
+  const driftCount = diagramEvents.filter((d) => d.event.event_type === 'diagram_drift').length;
+
+  return (
+    <div className="diagram-events-indicator" role="region" aria-label="Diagram mapping warnings">
+      <div className="diagram-events-header">
+        <span className="diagram-events-icon">⚠️</span>
+        <span className="diagram-events-title">Diagram Mapping Issues</span>
+        <span className="diagram-events-count">
+          {unmappedCount > 0 && <span className="unmapped-count">Unmapped: {unmappedCount}</span>}
+          {driftCount > 0 && <span className="drift-count">Drift: {driftCount}</span>}
+        </span>
+      </div>
+      <ul className="diagram-events-list" aria-label="List of diagram mapping issues">
+        {diagramEvents.slice(-10).map((d, idx) => (
+          <li key={`${d.event.event_id}-${idx}`} className={`diagram-event-item ${d.event.event_type}`}>
+            <span className="diagram-event-type">{d.event.event_type}</span>
+            <span className="diagram-event-file">{d.event.tool_input?.file_path as string}</span>
+            {d.diagram && (
+              <>
+                <span className="diagram-event-diagram">→ {d.diagram}</span>
+                <span className="diagram-event-node">({d.node})</span>
+              </>
+            )}
+            {d.reason && <span className="diagram-event-reason">{d.reason}</span>}
+            <span className="diagram-event-time">
+              {d.event.timestamp ? new Date(d.event.timestamp * 1000).toLocaleTimeString() : '—'}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export const formatSessionLabel = (session: SessionInfo): string => {
   const date = new Date(session.start_time * 1000);
@@ -98,6 +149,9 @@ export function TimelineView() {
       )}
 
       {!replay.isReplaying && <FilterBar />}
+
+      {/* Diagram events indicator */}
+      <DiagramEventsIndicator />
 
       <main className="timeline-container">
         {lanes.length === 0 ? (

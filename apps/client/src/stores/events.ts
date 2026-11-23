@@ -165,9 +165,9 @@ const useEventsStore = create<EventsState>((set, get) => ({
       const data = await response.json();
       const events = data.events || [];
 
-      // Clear live events and load historical events
+      // Clear live events, start with empty array for animation
       set({
-        events: events,
+        events: [],
         replay: {
           ...replay,
           isReplaying: true,

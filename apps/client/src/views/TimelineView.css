@@ -376,3 +376,170 @@
     --scrollbar-thumb-hover: #64748b;
   }
 }
+
+/* Diagram Events Indicator */
+.diagram-events-indicator {
+  padding: 12px 24px;
+  background: var(--diagram-warn-bg, #fff7ed);
+  border-bottom: 1px solid var(--diagram-warn-border, #fed7aa);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .diagram-events-indicator {
+    --diagram-warn-bg: #431407;
+    --diagram-warn-border: #9a3412;
+  }
+}
+
+.diagram-events-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--diagram-warn-text, #9a3412);
+}
+
+@media (prefers-color-scheme: dark) {
+  .diagram-events-header {
+    color: #fed7aa;
+  }
+}
+
+.diagram-events-icon {
+  font-size: 16px;
+}
+
+.diagram-events-title {
+  font-size: 14px;
+}
+
+.diagram-events-count {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  font-size: 13px;
+}
+
+.unmapped-count {
+  color: var(--unmapped-color, #ea580c);
+  font-weight: 500;
+}
+
+.drift-count {
+  color: var(--drift-color, #dc2626);
+  font-weight: 500;
+}
+
+.diagram-events-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.diagram-event-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 6px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .diagram-event-item {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.diagram-event-type {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.diagram-event-item.unmapped_edit .diagram-event-type {
+  background: var(--unmapped-bg, #ffedd5);
+  color: var(--unmapped-color, #ea580c);
+}
+
+.diagram-event-item.diagram_drift .diagram-event-type {
+  background: var(--drift-bg, #fef2f2);
+  color: var(--drift-color, #dc2626);
+}
+
+@media (prefers-color-scheme: dark) {
+  .diagram-event-item.unmapped_edit .diagram-event-type {
+    --unmapped-bg: #7c2d12;
+    --unmapped-color: #fdba74;
+  }
+  .diagram-event-item.diagram_drift .diagram-event-type {
+    --drift-bg: #7f1d1d;
+    --drift-color: #fca5a5;
+  }
+}
+
+.diagram-event-file {
+  font-family: monospace;
+  color: var(--text-primary, #1e293b);
+  flex: 1;
+  min-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .diagram-event-file {
+    color: #f1f5f9;
+  }
+}
+
+.diagram-event-diagram {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-muted, #64748b);
+  white-space: nowrap;
+}
+
+.diagram-event-node {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--accent, #3b82f6);
+  white-space: nowrap;
+}
+
+.diagram-event-reason {
+  font-size: 11px;
+  color: var(--text-muted, #64748b);
+  font-style: italic;
+}
+
+.diagram-event-time {
+  font-size: 11px;
+  color: var(--text-muted, #64748b);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

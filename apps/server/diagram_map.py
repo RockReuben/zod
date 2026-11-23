@@ -6,11 +6,15 @@ to zero or more diagram nodes using glob matching.
 """
 
 import fnmatch
+import json
 import os
 from pathlib import Path
 from typing import NamedTuple
 
 import yaml
+
+# Repo root for diagram mapping
+REPO_ROOT = Path(__file__).parent.parent.parent
 
 
 class DiagramMapping(NamedTuple):
@@ -156,6 +160,73 @@ def resolve_file_path(file_path: str, repo_root: Path | None = None) -> list[Map
     return match_path_to_mappings(file_path, mappings)
 
 
+def check_diagram_drift(file_path: str, repo_root: Path | None = None) -> list[dict]:
+    """Check if a mapped file edit should trigger a diagram_drift warning.
+
+    A drift warning is emitted when:
+    - The file matches a mapping in diagram-map.yaml
+    - The corresponding diagram file exists
+    - The diagram file's mtime is older than the file's mtime (or we don't have a record of it being updated)
+
+    Args:
+        file_path: Relative path from repo root (e.g., "apps/server/server.py")
+        repo_root: Optional explicit repo root. Defaults to current working directory.
+
+    Returns:
+        List of drift warnings, each with diagram path, node, and file path.
+        Empty list if no drift or no mapping.
+    """
+    if repo_root is None:
+        repo_root = Path.cwd()
+
+    results = resolve_file_path(file_path, repo_root)
+    if not results:
+        return []
+
+    drift_warnings = []
+    for result in results:
+        diagram_path = repo_root / result.diagram
+        if diagram_path.exists():
+            # Simple check: if the source file is newer than the diagram,
+            # the diagram may be out of date
+            try:
+                file_mtime = (repo_root / file_path).stat().st_mtime
+                diagram_mtime = diagram_path.stat().st_mtime
+                if file_mtime > diagram_mtime:
+                    drift_warnings.append({
+                        "diagram": result.diagram,
+                        "node": result.node,
+                        "file_path": file_path,
+                        "reason": "source file newer than diagram"
+                    })
+            except OSError:
+                # File doesn't exist or stat failed - no drift info
+                pass
+
+    return drift_warnings
+
+
+def get_file_path_from_tool_input(tool_name: str, tool_input: dict) -> str | None:
+    """Extract file path from a tool input dict based on tool name.
+
+    Args:
+        tool_name: The tool name (e.g., "Write", "Edit", "MultiEdit", "Read")
+        tool_input: The tool input dictionary
+
+    Returns:
+        The file path if found, None otherwise.
+    """
+    if tool_name in ("Write", "Edit", "MultiEdit"):
+        # These tools have file_path in their input
+        return tool_input.get("file_path")
+    elif tool_name == "Read":
+        return tool_input.get("file_path")
+    elif tool_name == "Task":
+        # Task tool might have file references in description
+        return None
+    return None
+
+
 if __name__ == "__main__":
     import sys
 
@@ -168,6 +239,12 @@ if __name__ == "__main__":
                     print(f"{path} -> {r.diagram} :: {r.node}")
             else:
                 print(f"{path} -> NO MATCH")
+
+            # Also check for drift
+            drift = check_diagram_drift(path)
+            if drift:
+                for d in drift:
+                    print(f"  DRIFT: {d['diagram']} :: {d['node']} (file: {d['file_path']}) - {d['reason']}")
     else:
         # Test with some example paths
         test_paths = [
@@ -185,3 +262,8 @@ if __name__ == "__main__":
                     print(f"{path} -> {r.diagram} :: {r.node}")
             else:
                 print(f"{path} -> NO MATCH")
+
+            drift = check_diagram_drift(path)
+            if drift:
+                for d in drift:
+                    print(f"  DRIFT: {d['diagram']} :: {d['node']} (file: {d['file_path']}) - {d['reason']}")

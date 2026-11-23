@@ -13,15 +13,25 @@ import asyncio
 import json
 import os
 import sqlite3
+import sys
 import uuid
 from pathlib import Path
 from aiohttp import web
+import aiohttp_cors
+
+from diagram_map import (
+    resolve_file_path,
+    check_diagram_drift,
+    get_file_path_from_tool_input,
+    REPO_ROOT,
+)
 
 # Load .env file if it exists
 ENV_PATH = Path(__file__).parent.parent.parent / ".env"
 if ENV_PATH.exists():
     try:
         from dotenv import load_dotenv
+
         load_dotenv(ENV_PATH)
     except ImportError:
         # Fallback: simple parser for KEY=VALUE lines
@@ -110,6 +120,9 @@ async def handle_events(request):
     source_app = payload.get("source_app", "unknown")
     agent_name = payload.get("agent_name", "unknown")
     event_type = payload.get("type", "unknown")
+    tool_name = payload.get("tool_name")
+    tool_input = payload.get("tool_input", {})
+    tool_output = payload.get("tool_output", {})
 
     # Store in database
     conn = sqlite3.connect(str(DATABASE_PATH))
@@ -125,9 +138,9 @@ async def handle_events(request):
                 source_app,
                 agent_name,
                 event_type,
-                payload.get("tool_name"),
-                json.dumps(payload.get("tool_input", {})),
-                json.dumps(payload.get("tool_output", {})),
+                tool_name,
+                json.dumps(tool_input),
+                json.dumps(tool_output),
                 payload.get("timestamp"),
                 payload.get("transcript_path"),
             ),
@@ -147,18 +160,163 @@ async def handle_events(request):
         "source_app": source_app,
         "agent_name": agent_name,
         "event_type": event_type,
-        "tool_name": payload.get("tool_name"),
-        "tool_input": payload.get("tool_input", {}),
-        "tool_output": payload.get("tool_output", {}),
+        "tool_name": tool_name,
+        "tool_input": tool_input,
+        "tool_output": tool_output,
         "timestamp": payload.get("timestamp"),
         "transcript_path": payload.get("transcript_path"),
     }
     asyncio.create_task(broadcast_event(event_data))
 
+    # Check for file edit events and emit diagram-related events
+    await check_and_emit_diagram_events(
+        session_id, source_app, agent_name, tool_name, tool_input
+    )
+
     return web.json_response(
         {"status": "stored", "event_id": last_id, "session_id": session_id},
         status=200,
     )
+
+
+async def check_and_emit_diagram_events(
+    session_id: str,
+    source_app: str,
+    agent_name: str,
+    tool_name: str | None,
+    tool_input: dict,
+):
+    """Check if a tool event should trigger unmapped_edit or diagram_drift events."""
+    if not tool_name:
+        return
+
+    # File modification tools that we track
+    file_edit_tools = {"Write", "Edit", "MultiEdit"}
+    if tool_name not in file_edit_tools:
+        return
+
+    # Extract file path from tool input
+    file_path = get_file_path_from_tool_input(tool_name, tool_input)
+    if not file_path:
+        return
+
+    # Normalize path (hook payloads may have absolute paths)
+    # We need relative path from repo root
+    file_path = normalize_file_path(file_path)
+    if not file_path:
+        return
+
+    # Check if file is mapped to a diagram node
+    results = resolve_file_path(file_path, REPO_ROOT)
+
+    if not results:
+        # No mapping found - emit unmapped_edit event
+        await emit_diagram_event(
+            session_id=session_id,
+            source_app=source_app,
+            agent_name=agent_name,
+            event_type="unmapped_edit",
+            tool_name=tool_name,
+            tool_input={"file_path": file_path},
+            tool_output={},
+        )
+    else:
+        # File is mapped - check for diagram drift
+        drift_warnings = check_diagram_drift(file_path, REPO_ROOT)
+        for drift in drift_warnings:
+            await emit_diagram_event(
+                session_id=session_id,
+                source_app=source_app,
+                agent_name=agent_name,
+                event_type="diagram_drift",
+                tool_name=tool_name,
+                tool_input={
+                    "file_path": file_path,
+                    "diagram": drift["diagram"],
+                    "node": drift["node"],
+                    "reason": drift["reason"],
+                },
+                tool_output={},
+            )
+
+
+async def emit_diagram_event(
+    session_id: str,
+    source_app: str,
+    agent_name: str,
+    event_type: str,
+    tool_name: str | None,
+    tool_input: dict,
+    tool_output: dict,
+):
+    """Emit a diagram-related event (unmapped_edit or diagram_drift)."""
+    import time
+
+    conn = sqlite3.connect(str(DATABASE_PATH))
+    try:
+        conn.execute(
+            """
+            INSERT INTO events (uuid, session_id, source_app, agent_name, event_type, tool_name, tool_input, tool_output, timestamp, transcript_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+            (
+                str(uuid.uuid4()),
+                session_id,
+                source_app,
+                agent_name,
+                event_type,
+                tool_name,
+                json.dumps(tool_input),
+                json.dumps(tool_output),
+                time.time(),
+                None,
+            ),
+        )
+        conn.commit()
+        event_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    except Exception as e:
+        conn.close()
+        # Log error but don't fail the main request
+        print(f"Error emitting diagram event: {e}", file=sys.stderr)
+        return
+    conn.close()
+
+    # Broadcast to WebSocket clients
+    event_data = {
+        "type": "event",
+        "event_id": event_id,
+        "session_id": session_id,
+        "source_app": source_app,
+        "agent_name": agent_name,
+        "event_type": event_type,
+        "tool_name": tool_name,
+        "tool_input": tool_input,
+        "tool_output": tool_output,
+        "timestamp": time.time(),
+        "transcript_path": None,
+    }
+    asyncio.create_task(broadcast_event(event_data))
+
+
+def normalize_file_path(file_path: str) -> str | None:
+    """Normalize a file path to be relative to repo root.
+
+    Handles relative paths (returns as-is) and absolute paths under repo root.
+    Returns None if the path is absolute but not under repo root.
+    """
+    path = Path(file_path)
+
+    # If it's already relative, return as-is (with normalized separators)
+    if not path.is_absolute():
+        return str(path).replace("\\", "/")
+
+    # Try to make it relative to repo root
+    try:
+        relative = path.relative_to(REPO_ROOT)
+        return str(relative).replace("\\", "/")
+    except ValueError:
+        # Path is not under repo root
+        return None
 
 
 async def handle_get_events(request):
@@ -168,7 +326,9 @@ async def handle_get_events(request):
 
     session_id = request.query.get("session_id")
     if not session_id:
-        return web.json_response({"error": "session_id query parameter required"}, status=400)
+        return web.json_response(
+            {"error": "session_id query parameter required"}, status=400
+        )
 
     try:
         limit = int(request.query.get("limit", "1000"))
@@ -202,20 +362,24 @@ async def handle_get_events(request):
 
     events = []
     for row in rows:
-        events.append({
-            "event_id": row["id"],
-            "uuid": row["uuid"],
-            "session_id": row["session_id"],
-            "source_app": row["source_app"],
-            "agent_name": row["agent_name"],
-            "event_type": row["event_type"],
-            "tool_name": row["tool_name"],
-            "tool_input": json.loads(row["tool_input"]) if row["tool_input"] else {},
-            "tool_output": json.loads(row["tool_output"]) if row["tool_output"] else {},
-            "timestamp": row["timestamp"],
-            "transcript_path": row["transcript_path"],
-            "created_at": row["created_at"],
-        })
+        events.append(
+            {
+                "event_id": row["id"],
+                "uuid": row["uuid"],
+                "session_id": row["session_id"],
+                "source_app": row["source_app"],
+                "agent_name": row["agent_name"],
+                "event_type": row["event_type"],
+                "tool_name": row["tool_name"],
+                "tool_input": json.loads(row["tool_input"]) if row["tool_input"] else {},
+                "tool_output": json.loads(row["tool_output"])
+                if row["tool_output"]
+                else {},
+                "timestamp": row["timestamp"],
+                "transcript_path": row["transcript_path"],
+                "created_at": row["created_at"],
+            }
+        )
 
     return web.json_response({"events": events, "total": total}, status=200)
 
@@ -246,14 +410,16 @@ async def handle_get_sessions(request):
 
     sessions = []
     for row in rows:
-        sessions.append({
-            "session_id": row["session_id"],
-            "agent_name": row["agent_name"] or "unknown",
-            "source_app": row["source_app"] or "unknown",
-            "event_count": row["event_count"],
-            "start_time": row["start_time"],
-            "end_time": row["end_time"],
-        })
+        sessions.append(
+            {
+                "session_id": row["session_id"],
+                "agent_name": row["agent_name"] or "unknown",
+                "source_app": row["source_app"] or "unknown",
+                "event_count": row["event_count"],
+                "start_time": row["start_time"],
+                "end_time": row["end_time"],
+            }
+        )
 
     return web.json_response({"sessions": sessions}, status=200)
 
@@ -390,18 +556,6 @@ async def main():
         await runner.cleanup()
 
 
-# Create the aiohttp application at module level for testing
-# (after all handlers are defined)
-app = web.Application()
-app.router.add_post("/events", handle_events)
-app.router.add_get("/events", handle_get_events)
-app.router.add_get("/sessions", handle_get_sessions)
-app.router.add_post("/messages", handle_messages)
-app.router.add_get("/messages/{target}", handle_get_messages)
-app.router.add_get("/diagrams/{name}", handle_get_diagrams)
-app.router.add_get("/ws", websocket_handler)
-
-
 def create_app():
     """Create a fresh aiohttp application for testing."""
     app = web.Application()
@@ -412,8 +566,34 @@ def create_app():
     app.router.add_get("/messages/{target}", handle_get_messages)
     app.router.add_get("/diagrams/{name}", handle_get_diagrams)
     app.router.add_get("/ws", websocket_handler)
+
+    # Configure CORS for the client at localhost:5173
+    cors = aiohttp_cors.setup(
+        app,
+        defaults={
+            "http://127.0.0.1:5173": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+                allow_methods="*",
+            ),
+            "http://localhost:5173": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+                allow_methods="*",
+            ),
+        },
+    )
+    # Apply CORS to all routes
+    for route in list(app.router.routes()):
+        cors.add(route)
+
     return app
 
 
+# Create the aiohttp application at module level for testing
+# (after all handlers are defined)
+app = create_app()
 if __name__ == "__main__":
     asyncio.run(main())

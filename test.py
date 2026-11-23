@@ -47,6 +47,15 @@ def post_event(payload: dict) -> bool:
 
 
 def main():
+    # Use a base timestamp and increment for unique timestamps per event
+    base_ts = 1700000000
+    ts = base_ts
+
+    def next_ts():
+        nonlocal ts
+        ts += 1
+        return ts
+
     events = [
         # Session 1: pkg-auth, auth-agent
         {
@@ -56,7 +65,7 @@ def main():
             "type": "PreToolUse",
             "tool_name": "Read",
             "tool_input": {"file_path": "/src/auth/login.ts"},
-            "timestamp": 1700000000,
+            "timestamp": next_ts(),
         },
         {
             "session_id": "sess-1",
@@ -66,7 +75,7 @@ def main():
             "tool_name": "Read",
             "tool_input": {"file_path": "/src/auth/login.ts"},
             "tool_output": {"success": True},
-            "timestamp": 1700000001,
+            "timestamp": next_ts(),
         },
         {
             "session_id": "sess-1",
@@ -75,7 +84,7 @@ def main():
             "type": "PreToolUse",
             "tool_name": "Write",
             "tool_input": {"file_path": "/src/auth/token.ts", "content": "..."},
-            "timestamp": 1700000002,
+            "timestamp": next_ts(),
         },
         {
             "session_id": "sess-1",
@@ -83,7 +92,7 @@ def main():
             "agent_name": "auth-agent",
             "type": "Stop",
             "tool_name": "Stop",
-            "timestamp": 1700000003,
+            "timestamp": next_ts(),
         },
         # Session 2: pkg-db, db-agent
         {
@@ -93,7 +102,7 @@ def main():
             "type": "PreToolUse",
             "tool_name": "Read",
             "tool_input": {"file_path": "/src/db/schema.sql"},
-            "timestamp": 1700000005,
+            "timestamp": next_ts(),
         },
         {
             "session_id": "sess-2",
@@ -102,7 +111,7 @@ def main():
             "type": "PostToolUse",
             "tool_name": "Write",
             "tool_input": {"file_path": "/src/db/migration.ts", "content": "..."},
-            "timestamp": 1700000006,
+            "timestamp": next_ts(),
         },
         {
             "session_id": "sess-2",
@@ -111,7 +120,7 @@ def main():
             "type": "SubagentStart",
             "tool_name": "Task",
             "tool_input": {"description": "Run migrations"},
-            "timestamp": 1700000007,
+            "timestamp": next_ts(),
         },
         # Session 3: pkg-api, api-agent
         {
@@ -121,7 +130,7 @@ def main():
             "type": "PreToolUse",
             "tool_name": "Read",
             "tool_input": {"file_path": "/src/api/routes.ts"},
-            "timestamp": 1700000010,
+            "timestamp": next_ts(),
         },
     ]
 

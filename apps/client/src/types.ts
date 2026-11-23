@@ -13,6 +13,13 @@ export interface HookEvent {
   transcript_path?: string;
 }
 
+/** Diagram-related event types */
+export type DiagramEventType = 'unmapped_edit' | 'diagram_drift';
+
+export function isDiagramEvent(eventType: string): eventType is DiagramEventType {
+  return eventType === 'unmapped_edit' || eventType === 'diagram_drift';
+}
+
 /** Session lane for the timeline view */
 export interface SessionLane {
   session_id: string;

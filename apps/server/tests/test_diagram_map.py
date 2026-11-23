@@ -10,10 +10,14 @@ matrix: diagram-map-match | boundary | P3.2
 matrix: diagram-map-match | empty-missing | P3.2
 matrix: diagram-map-match | out-of-order | P3.2
 matrix: diagram-map-match | wrong-type | P3.2
+matrix: diagram-map-drift | valid-typical | P3.3
+matrix: diagram-map-drift | empty-missing | P3.3
+matrix: diagram-map-extract | valid-typical | P3.3
 """
 
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 # Add parent directory to path for imports
@@ -28,6 +32,9 @@ from diagram_map import (
     glob_specificity,
     match_path_to_mappings,
     resolve_file_path,
+    check_diagram_drift,
+    get_file_path_from_tool_input,
+    REPO_ROOT,
 )
 
 
@@ -279,6 +286,126 @@ class TestResolveFilePath:
         repo_root = Path(__file__).parent.parent.parent.parent
         results = resolve_file_path("random/file.txt", repo_root)
         assert results == []
+
+
+class TestCheckDiagramDrift:
+    """Tests for check_diagram_drift function."""
+
+    def setup_method(self):
+        """Set up temp directory structure for drift tests."""
+        self.tmp_dir = Path(tempfile.mkdtemp())
+        self.repo_root = self.tmp_dir
+
+        # Create diagram-map.yaml
+        map_file = self.repo_root / "diagram-map.yaml"
+        map_file.write_text("""
+- glob: "apps/server/**"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "server"
+- glob: "apps/client/**"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "client"
+""")
+
+        # Create directory structure
+        (self.repo_root / "apps" / "server").mkdir(parents=True)
+        (self.repo_root / "docs" / "diagrams").mkdir(parents=True)
+
+        # Create a diagram file
+        diagram_file = self.repo_root / "docs" / "diagrams" / "system-overview.md"
+        diagram_file.write_text("# System Overview\n```mermaid\nflowchart TD\n    server[Server]\n```")
+
+    def teardown_method(self):
+        """Clean up temp directory."""
+        import shutil
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_drift_when_source_newer_than_diagram(self):
+        """Drift warning when source file is newer than diagram."""
+        # Create a source file
+        source_file = self.repo_root / "apps" / "server" / "new_module.py"
+        source_file.write_text("# New module")
+
+        # Wait a bit to ensure different mtimes
+        time.sleep(0.01)
+
+        # Update the source file (make it newer)
+        source_file.write_text("# New module updated")
+
+        drift = check_diagram_drift("apps/server/new_module.py", self.repo_root)
+        assert len(drift) == 1
+        assert drift[0]["node"] == "server"
+        assert drift[0]["diagram"] == "docs/diagrams/system-overview.md"
+        assert drift[0]["file_path"] == "apps/server/new_module.py"
+        assert "newer" in drift[0]["reason"]
+
+    def test_no_drift_when_diagram_newer(self):
+        """No drift when diagram is newer than source file."""
+        # Create a source file
+        source_file = self.repo_root / "apps" / "server" / "module.py"
+        source_file.write_text("# Module")
+
+        # Wait a bit
+        time.sleep(0.01)
+
+        # Update the diagram (make it newer)
+        diagram_file = self.repo_root / "docs" / "diagrams" / "system-overview.md"
+        diagram_file.write_text("# System Overview Updated\n```mermaid\nflowchart TD\n    server[Server]\n```")
+
+        drift = check_diagram_drift("apps/server/module.py", self.repo_root)
+        assert drift == []
+
+    def test_no_drift_for_unmapped_path(self):
+        """No drift for paths that don't match any mapping."""
+        drift = check_diagram_drift("random/file.txt", self.repo_root)
+        assert drift == []
+
+    def test_no_drift_when_diagram_missing(self):
+        """No drift when diagram file doesn't exist."""
+        # Create a source file
+        source_file = self.repo_root / "apps" / "server" / "module.py"
+        source_file.write_text("# Module")
+
+        # Remove diagram
+        diagram_file = self.repo_root / "docs" / "diagrams" / "system-overview.md"
+        diagram_file.unlink()
+
+        drift = check_diagram_drift("apps/server/module.py", self.repo_root)
+        assert drift == []
+
+
+class TestGetFilePathFromToolInput:
+    """Tests for get_file_path_from_tool_input function."""
+
+    def test_write_tool(self):
+        """Write tool has file_path in input."""
+        result = get_file_path_from_tool_input("Write", {"file_path": "/path/to/file.py", "content": "x"})
+        assert result == "/path/to/file.py"
+
+    def test_edit_tool(self):
+        """Edit tool has file_path in input."""
+        result = get_file_path_from_tool_input("Edit", {"file_path": "/path/to/file.py", "old_string": "a", "new_string": "b"})
+        assert result == "/path/to/file.py"
+
+    def test_multiedit_tool(self):
+        """MultiEdit tool has file_path in input."""
+        result = get_file_path_from_tool_input("MultiEdit", {"file_path": "/path/to/file.py", "edits": []})
+        assert result == "/path/to/file.py"
+
+    def test_read_tool(self):
+        """Read tool has file_path in input."""
+        result = get_file_path_from_tool_input("Read", {"file_path": "/path/to/file.py"})
+        assert result == "/path/to/file.py"
+
+    def test_unknown_tool(self):
+        """Unknown tool returns None."""
+        result = get_file_path_from_tool_input("UnknownTool", {"file_path": "/path/to/file.py"})
+        assert result is None
+
+    def test_task_tool(self):
+        """Task tool returns None (no direct file path)."""
+        result = get_file_path_from_tool_input("Task", {"description": "Do something"})
+        assert result is None
 
 
 if __name__ == "__main__":

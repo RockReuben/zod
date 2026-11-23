@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { SessionLane, HookEvent } from '../types';
+import { SessionLane, HookEvent, isDiagramEvent } from '../types';
 import './TimelineLane.css';
 
 interface TimelineLaneProps {
@@ -9,6 +9,10 @@ interface TimelineLaneProps {
 
 function getEventColor(eventType: string): string {
   // Color by event type category
+  if (isDiagramEvent(eventType)) {
+    if (eventType === 'unmapped_edit') return '#f97316'; // orange - warning
+    if (eventType === 'diagram_drift') return '#dc2626'; // red - error
+  }
   if (eventType.startsWith('Pre')) return '#3b82f6'; // blue
   if (eventType.startsWith('Post')) return '#22c55e'; // green
   if (eventType.includes('Stop')) return '#ef4444'; // red
