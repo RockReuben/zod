@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run python .claude/hooks/check_inbox_stop.py"
+            "command": "uv run python ~/ws/zod/.claude/hooks/check_inbox_stop.py"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run python .claude/hooks/send_event.py"
+            "command": "uv run python ~/.claude/hooks/send_event.py"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run python .claude/hooks/send_event.py"
+            "command": "uv run python ~/.claude/hooks/send_event.py"
           }
         ]
       }
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run python .claude/hooks/send_event.py"
+            "command": "uv run python ~/.claude/hooks/send_event.py"
           }
         ]
       }

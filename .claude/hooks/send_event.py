@@ -8,13 +8,25 @@ No LLM calls. Pure event forwarding.
 """
 
 import json
+import os
 import sys
 import urllib.request
 import urllib.error
+from pathlib import Path
+
+# Load .env file if it exists
+ENV_PATH = Path(__file__).parent.parent.parent / ".env"
+if ENV_PATH.exists():
+    for line in ENV_PATH.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, value = line.split("=", 1)
+            value = value.strip().strip('"').strip("'")
+            os.environ.setdefault(key, value)
 
 # Configuration - these should match the server
 SERVER_URL = "http://127.0.0.1:8081/events"
-TOKEN = "zod-control-center-token"
+TOKEN = os.environ.get("ZOD_TOKEN", "zod-control-center-token")
 
 
 def forward_event(payload: dict):
