@@ -230,6 +230,8 @@ export function ChatBox() {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onClick={(e) => { e.currentTarget.focus(); }}
+          onMouseDown={(e) => { e.currentTarget.focus(); }}
           placeholder={`Message to ${selectedTarget}... (Enter to send, Shift+Enter for new line)`}
           disabled={isSending}
           rows={1}
@@ -274,9 +276,9 @@ export function ChatBox() {
 
       {/* Shortcut hints */}
       <div className="chat-shortcuts">
-        <kbd className="shortcut-key">⌘K</kbd> Focus chat
-        <kbd className="shortcut-key">⌘⇧K</kbd> Cycle target
-        <kbd className="shortcut-key">⌘/</kbd> Toggle panel
+        <kbd className="shortcut-key">Alt+M</kbd> Focus chat
+        <kbd className="shortcut-key">Alt+T</kbd> Cycle target
+        <kbd className="shortcut-key">`</kbd> Toggle panel
       </div>
     </div>
   );

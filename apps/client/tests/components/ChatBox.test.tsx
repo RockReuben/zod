@@ -195,8 +195,8 @@ describe('ChatBox', () => {
   it('displays shortcut hints', () => {
     render(<ChatBox />);
 
-    expect(screen.getByText('⌘K')).toBeInTheDocument();
-    expect(screen.getByText('⌘⇧K')).toBeInTheDocument();
-    expect(screen.getByText('⌘/')).toBeInTheDocument();
+    expect(screen.getByText('Alt+M')).toBeInTheDocument();
+    expect(screen.getByText('Alt+T')).toBeInTheDocument();
+    expect(screen.getByText('`')).toBeInTheDocument();
   });
 });

@@ -1,19 +1,19 @@
 {
   "shortcuts": {
-    "focusChat": "Meta+K",
-    "cycleChatTarget": "Meta+Shift+K",
-    "toggleChatPanel": "Meta+/"
+    "focusChat": "Alt+M",
+    "cycleChatTarget": "Alt+T",
+    "toggleChatPanel": "Backquote"
   },
   "platformOverrides": {
     "win32": {
-      "focusChat": "Control+K",
-      "cycleChatTarget": "Control+Shift+K",
-      "toggleChatPanel": "Control+/"
+      "focusChat": "Alt+M",
+      "cycleChatTarget": "Alt+T",
+      "toggleChatPanel": "Backquote"
     },
     "linux": {
-      "focusChat": "Control+K",
-      "cycleChatTarget": "Control+Shift+K",
-      "toggleChatPanel": "Control+/"
+      "focusChat": "Alt+M",
+      "cycleChatTarget": "Alt+T",
+      "toggleChatPanel": "Backquote"
     }
   }
 }
