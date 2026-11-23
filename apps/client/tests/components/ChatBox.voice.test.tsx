@@ -124,7 +124,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 1. Microphone button renders in chat input area
   // ============================================================
-  it.fails('renders microphone button in the input area', () => {
+  it('renders microphone button in the input area', () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -136,7 +136,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 2. Clicking microphone requests permission and starts SpeechRecognition
   // ============================================================
-  it.fails('starts SpeechRecognition when microphone button is clicked', async () => {
+  it('starts SpeechRecognition when microphone button is clicked', async () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -149,7 +149,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(mockSpeechRecognition!.start).toHaveBeenCalled();
   });
 
-  it.fails('uses webkitSpeechRecognition when SpeechRecognition not available', async () => {
+  it('uses webkitSpeechRecognition when SpeechRecognition not available', async () => {
     // matrix: ChatBox | browser not supported (fallback) | P5.5
     // Remove standard SpeechRecognition, only webkit available
     global.SpeechRecognition = undefined as any;
@@ -167,7 +167,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 3. Interim speech results appear in textarea as user speaks
   // ============================================================
-  it.fails('shows interim speech results in textarea while listening', async () => {
+  it('shows interim speech results in textarea while listening', async () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -190,7 +190,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(textarea).toHaveValue('Hello wor');
   });
 
-  it.fails('appends multiple interim results', async () => {
+  it('appends multiple interim results', async () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -231,7 +231,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 4. Final speech result stays in textarea for editing
   // ============================================================
-  it.fails('keeps final speech result in textarea after recognition ends', async () => {
+  it('keeps final speech result in textarea after recognition ends', async () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -262,7 +262,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 5. User can edit recognized text before sending
   // ============================================================
-  it.fails('allows user to edit recognized text before sending', async () => {
+  it('allows user to edit recognized text before sending', async () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -300,7 +300,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 6. Error handling
   // ============================================================
-  it.fails('handles permission denied error', async () => {
+  it('handles permission denied error', async () => {
     // matrix: ChatBox | permission denied | P5.5
     render(<ChatBox />);
 
@@ -322,7 +322,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     // Or check for error styling/message
   });
 
-  it.fails('handles no speech detected error', async () => {
+  it('handles no speech detected error', async () => {
     // matrix: ChatBox | no speech detected | P5.5
     render(<ChatBox />);
 
@@ -342,7 +342,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(micBtnAfterError).not.toBeDisabled();
   });
 
-  it.fails('handles network error', async () => {
+  it('handles network error', async () => {
     // matrix: ChatBox | network error | P5.5
     render(<ChatBox />);
 
@@ -362,7 +362,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(micBtnAfterError).not.toBeDisabled();
   });
 
-  it.fails('shows unsupported browser message when SpeechRecognition unavailable', async () => {
+  it('shows unsupported browser message when SpeechRecognition unavailable', async () => {
     // matrix: ChatBox | browser not supported | P5.5
     global.SpeechRecognition = undefined as any;
     (global as any).webkitSpeechRecognition = undefined as any;
@@ -380,7 +380,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 7. Microphone button visual states
   // ============================================================
-  it.fails('shows listening state while recognition is active', async () => {
+  it('shows listening state while recognition is active', async () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -393,7 +393,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(micButton).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it.fails('returns to idle state after recognition ends', async () => {
+  it('returns to idle state after recognition ends', async () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -408,7 +408,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(micButton).not.toHaveAttribute('aria-pressed', 'true');
   });
 
-  it.fails('shows error state on recognition error', async () => {
+  it('shows error state on recognition error', async () => {
     // matrix: ChatBox | error | P5.5
     render(<ChatBox />);
 
@@ -431,7 +431,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 8. Accessibility
   // ============================================================
-  it.fails('has proper ARIA label for microphone button', () => {
+  it('has proper ARIA label for microphone button', () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -439,7 +439,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(micButton).toHaveAttribute('aria-label');
   });
 
-  it.fails('is keyboard accessible (Enter/Space to toggle)', async () => {
+  it('is keyboard accessible (Enter/Space to toggle)', async () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -452,7 +452,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(mockSpeechRecognition!.start).toHaveBeenCalled();
   });
 
-  it.fails('announces listening state to screen readers', async () => {
+  it('announces listening state to screen readers', async () => {
     // matrix: ChatBox | valid/typical | P5.5
     render(<ChatBox />);
 
@@ -467,19 +467,19 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 9. Works alongside existing keyboard shortcuts
   // ============================================================
-  it.fails('does not interfere with Meta+K focus shortcut', async () => {
-    // matrix: ChatBox | valid/typical | P5.5
-    const useShortcut = vi.mocked((await import('../../src/hooks/useKeybindings')).useShortcut);
+  it('does not interfere with Meta+K focus shortcut (invariant)', () => {
+    // matrix: ChatBox | invariant | invariant
+    const useShortcut = vi.mocked(require('../../src/hooks/useKeybindings').useShortcut);
 
     render(<ChatBox />);
 
-    // Verify focusChat shortcut is still registered
+    // Verify focusChat shortcut is still registered (invariant: existing shortcuts work)
     expect(useShortcut).toHaveBeenCalledWith('focusChat', expect.any(Function));
   });
 
-  it.fails('does not interfere with Meta+Shift+K cycle target shortcut', async () => {
-    // matrix: ChatBox | valid/typical | P5.5
-    const useShortcut = vi.mocked((await import('../../src/hooks/useKeybindings')).useShortcut);
+  it('does not interfere with Meta+Shift+K cycle target shortcut (invariant)', () => {
+    // matrix: ChatBox | invariant | invariant
+    const useShortcut = vi.mocked(require('../../src/hooks/useKeybindings').useShortcut);
 
     render(<ChatBox />);
 
@@ -489,7 +489,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
   // ============================================================
   // 10. Additional edge cases (robustness invariants)
   // ============================================================
-  it.fails('handles rapid start/stop clicks gracefully', async () => {
+  it('handles rapid start/stop clicks gracefully', async () => {
     // matrix: ChatBox | concurrent | P5.5
     render(<ChatBox />);
 
@@ -504,7 +504,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(global.SpeechRecognition).toHaveBeenCalledTimes(1);
   });
 
-  it.fails('stops recognition when component unmounts', async () => {
+  it('stops recognition when component unmounts', async () => {
     // matrix: ChatBox | lifecycle | P5.5
     const { unmount } = render(<ChatBox />);
 
@@ -517,7 +517,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(mockSpeechRecognition!.stop).toHaveBeenCalled();
   });
 
-  it.fails('handles oversized transcript without crashing', async () => {
+  it('handles oversized transcript without crashing', async () => {
     // matrix: ChatBox | oversized | P5.5
     render(<ChatBox />);
 
@@ -544,7 +544,7 @@ describe('ChatBox - Voice Input (P5.5)', () => {
     expect(textarea).toHaveValue(longText);
   });
 
-  it.fails('handles special characters in transcript', async () => {
+  it('handles special characters in transcript', async () => {
     // matrix: ChatBox | hostile content | P5.5
     render(<ChatBox />);
 

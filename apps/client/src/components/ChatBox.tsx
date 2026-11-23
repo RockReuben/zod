@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, KeyboardEvent } from 'react';
 import { useEventsStore } from '../stores/events';
 import { TargetSelector } from './TargetSelector';
-import { InboxMessage } from '../types';
+import { InboxMessage, SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../types';
 import { useShortcut } from '../hooks/useKeybindings';
 import './ChatBox.css';
 
@@ -17,8 +17,12 @@ export function ChatBox() {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTargetHint, setShowTargetHint] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Fetch messages when target changes
   useEffect(() => {
@@ -74,6 +78,96 @@ export function ChatBox() {
     cycleTarget();
     setShowTargetHint(true);
     setTimeout(() => setShowTargetHint(false), 1500);
+  };
+
+  // Initialize speech recognition support check
+  useEffect(() => {
+    const hasSpeechRecognition = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
+    setIsSpeechSupported(hasSpeechRecognition);
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
+    };
+  }, []);
+
+  const startListening = useCallback(() => {
+    if (isListening || !isSpeechSupported) return;
+
+    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setIsSpeechSupported(false);
+      setSpeechError('Speech recognition not supported in this browser');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setSpeechError(null);
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInputValue(transcript);
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      setIsListening(false);
+      const errorMessages: Record<string, string> = {
+        'not-allowed': 'Microphone permission denied',
+        'no-speech': 'No speech detected',
+        'network': 'Network error occurred',
+        'audio-capture': 'Audio capture failed',
+        'service-not-allowed': 'Speech recognition service not allowed',
+        'bad-grammar': 'Grammar error',
+        'aborted': 'Speech recognition aborted',
+      };
+      setSpeechError(errorMessages[event.error] || `Speech recognition error: ${event.error}`);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  }, [isListening, isSpeechSupported]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  }, [isListening, startListening, stopListening]);
+
+  // Handle keyboard activation of microphone button
+  const handleMicKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleListening();
+    }
   };
 
   return (
@@ -142,6 +236,18 @@ export function ChatBox() {
           aria-label={`Message input for ${selectedTarget}`}
         />
         <button
+          type="button"
+          className={`chat-mic-btn ${isListening ? 'listening' : ''} ${speechError ? 'error' : ''}`}
+          onClick={toggleListening}
+          onKeyDown={handleMicKeyDown}
+          disabled={!isSpeechSupported || isSending}
+          aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
+          aria-pressed={isListening}
+          title={isListening ? 'Stop listening (click or press Enter/Space)' : isSpeechSupported ? 'Start voice input (click or press Enter/Space)' : 'Speech recognition not supported'}
+        >
+          {isListening ? '🔴' : '🎤'}
+        </button>
+        <button
           className="chat-send-btn"
           type="submit"
           disabled={!inputValue.trim() || isSending}
@@ -150,6 +256,20 @@ export function ChatBox() {
           {isSending ? '⏳' : '➤'}
         </button>
       </form>
+
+      {/* Speech error display */}
+      {speechError && (
+        <div className="chat-speech-error" role="alert">
+          {speechError}
+          <button onClick={() => setSpeechError(null)} aria-label="Dismiss">×</button>
+        </div>
+      )}
+
+      {!isSpeechSupported && (
+        <div className="chat-speech-error" role="alert">
+          Speech recognition not supported in this browser
+        </div>
+      )}
 
       {/* Shortcut hints */}
       <div className="chat-shortcuts">
