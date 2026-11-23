@@ -105,7 +105,7 @@ Statuses: `todo`, `in-progress`, `pending-review` (all phase tasks done; awaitin
 | P2    | Timeline UI             | 3 / 3        | done        |
 | P3    | Diagram mapping         | 4 / 4        | done        |
 | P4    | Live architecture view  | 3 / 4        | in-progress |
-| P5    | Chat and voice input    | 6 / 7        | in-progress |
+| P5    | Chat and voice input    | 7 / 7        | done        |
 | P6    | Planning mode           | 0 / 8        | todo        |
 | P7    | Execution orchestration | 0 / 4        | todo        |
 | P8    | Hardening               | 0 / 4        | todo        |
@@ -311,7 +311,7 @@ Notes:
 | P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer.                                                                                    | P5.2       | A question posted by a script appears in the UI, and the answer is retrievable by the asker.           | done   | Session 14 |
 | P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box.                                                                                                            | P5.2       | Speaking a sentence puts its text in the box, which the user can edit before sending.                  | done   | Session 15 |
 | P5.6 | Route messages with no target to the lead agent, and support `@name` addressing.                                                                                                                            | P5.2       | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox.    | done   | Session 16 |
-| P5.7 | Integrate QuestionsPanel into ChatPanel as inline prompts (questions appear in chat history with answer input, replacing standalone QuestionsPanel).                                                        | P5.4       | Agent questions appear in chat with answer box; answering removes prompt from chat.                    | todo   |            |
+| P5.7 | Integrate QuestionsPanel into ChatPanel as inline prompts (questions appear in chat history with answer input, replacing standalone QuestionsPanel).                                                        | P5.4       | Agent questions appear in chat with answer box; answering removes prompt from chat.                    | done   | Session 18 |
 
 Notes:
 
@@ -681,6 +681,23 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Next task: P5.7 (Integrate QuestionsPanel into ChatPanel as inline prompts)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
+### Session 17: 2026-11-23 (Claude)
+
+- Goal: P4.2 (Node highlighting on file-edit events)
+- Done-when, in my words: On each file-edit event (Write, Edit, MultiEdit), map the path to a diagram node and emit a node_highlight event via WebSocket with agent_name, diagram, node, and timestamp. Client highlights the node with agent's color and fades after 10 seconds.
+- Starting state: P4.1 done (DiagramPanel renders Mermaid), P3.2 done (diagram_map.py resolve_file_path). Server has check_and_emit_diagram_events that already emits node_highlight events.
+- What changed:
+  - `apps/server/diagram_map.py` - Added `normalize_file_path()` function as shared utility handling both relative and absolute paths, with path traversal protection (resolves `..` and verifies path stays within repo root)
+  - `apps/server/server.py` - Updated to import and use `normalize_file_path` from diagram_map with explicit REPO_ROOT parameter; removed duplicate implementation from server.py
+  - `apps/server/tests/test_p42_node_highlight.py` - New spec test file (25 tests) covering POST /events with Write/Edit/MultiEdit to mapped paths, unmapped paths, non-file-edit tools, multiple agents, rapid edits, and direct unit tests for internal functions
+  - `docs/plans/zod-control-center.md` - Updated P4.2 task status to done with Session 17
+- Verified: `npm run check` passes (typecheck + 166 server tests + 212 client tests + diagrams:check = all pass). All 61 diagram_map + p42 tests pass.
+- Review: diff-reviewer found 1 high-severity security bug (path traversal in normalize_file_path) — fixed by resolving relative paths against repo_root and verifying they stay within bounds. No BLOCKING findings remaining.
+- Diagrams changed: No diagram changes needed (existing system-overview.md and diagram-map.yaml node IDs match)
+- Not done: P5.7 (Integrate QuestionsPanel into ChatPanel as inline prompts)
+- Next task: P5.7 (Integrate QuestionsPanel into ChatPanel as inline prompts)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
 ### Session 6: 2026-11-12 (Claude)
 
 - Goal: P3.1-3.2 (diagram-map.yaml schema + path-to-node function)
@@ -696,3 +713,27 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Not done: P3.2 (path mapping function)
 - Next task: P3.2 (Write path mapping function with glob matching tests)
 - Blockers / questions: None
+
+### Session 18: 2026-11-23 (Claude)
+
+- Goal: P5.7 (Integrate QuestionsPanel into ChatPanel as inline prompts)
+- Done-when, in my words: Questions from agents appear inline in chat history with answer input; submitting answer removes question from chat.
+- Starting state: P5.4 done (questions endpoints and QuestionsPanel exist), P5.5 done (voice input), P5.6 done (message routing). QuestionsPanel is a separate panel component.
+- What changed:
+  - `apps/client/src/types.ts` - Added `QuestionMessage`, `ChatItem` union type, and `isQuestionMessage` type guard for inline question rendering
+  - `apps/client/src/stores/events.ts` - Added `getChatItems(target)` selector merging messages + pending questions, `getUnreadCount(target)` including questions, renamed internal `Question` to `ServerQuestion`
+  - `apps/client/src/components/ChatBox.tsx` - Replaced `MessageItem` with `ChatItemRenderer` that handles both `InboxMessage` and `QuestionMessage`; added `QuestionItem` component with inline answer form
+  - `apps/client/src/components/ChatBox.css` - Added styles for question messages (orange accent), answer form, and answer buttons
+  - `apps/client/src/components/ChatPanel.tsx` - Updated unread badge to use `getUnreadCount` (includes pending questions)
+  - `apps/client/src/components/QuestionsPanel.tsx` - **Deleted** (standalone panel removed)
+  - `apps/client/src/components/QuestionsPanel.css` - **Deleted**
+  - `apps/client/tests/components/ChatBox.test.tsx` - Updated mocks to include `getChatItems`, `getUnreadCount`, `answerQuestion`
+  - `apps/client/tests/components/ChatPanel.test.tsx` - Updated mocks to include `getChatItems`, `getUnreadCount`
+  - `apps/client/tests/components/ChatBox.voice.test.tsx` - Updated mocks to include `getChatItems`, `getUnreadCount`, `answerQuestion`
+  - `apps/client/tests/components/QuestionsPanel.test.tsx` - **Deleted**
+- Verified: `pnpm run check` passes (typecheck + 207 client unit tests + 166 server tests + diagrams:check = all pass)
+- Review: All tests pass, no BLOCKING findings
+- Diagrams changed: No diagram changes needed
+- Not done: P6.1 (Planning mode - plan folder format)
+- Next task: P6.1 (Define plan folder format and docs/plans/README.md)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)

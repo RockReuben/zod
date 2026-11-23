@@ -398,6 +398,155 @@
   white-space: nowrap;
 }
 
+/* Question items */
+.chat-message.question {
+  border-left: 3px solid var(--warning-color, #f57c00);
+  background: var(--warning-bg, rgba(245, 124, 0, 0.1));
+}
+
+.question-badge {
+  color: var(--warning-color, #f57c00) !important;
+  font-weight: 600;
+}
+
+.question-text {
+  font-style: italic;
+  color: var(--text-primary, #e0e0e0);
+}
+
+/* Question answer form */
+.question-answer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color, #333);
+}
+
+.question-answer-input {
+  min-height: 60px;
+  max-height: 120px;
+  padding: 10px 12px;
+  background: var(--bg-primary, #121212);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  color: var(--text-primary, #e0e0e0);
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.question-answer-input::placeholder {
+  color: var(--text-secondary, #888);
+}
+
+.question-answer-input:focus {
+  border-color: var(--accent-color, #1a73e8);
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.question-answer-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.question-error {
+  color: #ef4444;
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.question-answer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.question-answer-btn {
+  padding: 6px 12px;
+  background: var(--warning-color, #f57c00);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.question-answer-btn:hover {
+  background: #e65c00;
+  transform: scale(1.02);
+}
+
+.question-answer-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--warning-color, #f57c00);
+}
+
+.question-answer-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 4px;
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: var(--bg-secondary, #1e1e1e);
+  border-color: var(--accent-color, #1a73e8);
+  color: var(--accent-color, #1a73e8);
+}
+
+.btn-cancel:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-color, #1a73e8);
+}
+
+.btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-submit {
+  padding: 6px 12px;
+  background: var(--success-color, #2e7d32);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: #1b5e20;
+  transform: scale(1.02);
+}
+
+.btn-submit:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--success-color, #2e7d32);
+}
+
+.btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Scrollbar */
 .chat-messages::-webkit-scrollbar {
   width: 6px;

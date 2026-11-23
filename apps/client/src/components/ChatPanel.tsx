@@ -8,7 +8,7 @@ export function ChatPanel() {
   const chatPanelOpen = useEventsStore((s) => s.chatPanelOpen);
   const toggleChatPanel = useEventsStore((s) => s.toggleChatPanel);
   const selectedTarget = useEventsStore((s) => s.selectedTarget);
-  const messages = useEventsStore((s) => s.messages.get(selectedTarget) || []);
+  const getUnreadCount = useEventsStore((s) => s.getUnreadCount);
 
   const panelRef = useRef<HTMLDivElement>(null);
   const toggleButtonRef = useRef<HTMLButtonElement>(null);
@@ -28,8 +28,8 @@ export function ChatPanel() {
     }
   }, [chatPanelOpen]);
 
-  // Count unread messages for badge
-  const unreadCount = messages.length;
+  // Count unread messages + pending questions for badge
+  const unreadCount = getUnreadCount(selectedTarget);
 
   if (!chatPanelOpen) {
     return (

@@ -6,6 +6,16 @@ import { useEventsStore } from '../../src/stores/events';
 import { InboxMessage } from '../../src/types';
 
 // Mock the events store
+const mockMessagesMap = new Map<string, InboxMessage[]>();
+
+const mockGetChatItems = vi.fn((target: string) => {
+  return mockMessagesMap.get(target) || [];
+});
+
+const mockGetUnreadCount = vi.fn((target: string) => {
+  return (mockMessagesMap.get(target) || []).length;
+});
+
 vi.mock('../../src/stores/events', () => ({
   useEventsStore: vi.fn(),
 }));
@@ -24,6 +34,9 @@ describe('ChatPanel', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockMessagesMap.clear();
+    mockMessagesMap.set('lead', mockMessages);
+    mockMessagesMap.set('backend', []);
     mockUseEventsStore.mockImplementation((selector) => selector({
       chatPanelOpen: false,
       selectedTarget: 'lead',
@@ -36,6 +49,8 @@ describe('ChatPanel', () => {
       cycleTarget: vi.fn(),
       updateAvailableTargets: vi.fn(),
       fetchMessages: vi.fn().mockResolvedValue(undefined),
+      getChatItems: mockGetChatItems,
+      getUnreadCount: mockGetUnreadCount,
     }));
   });
 
@@ -73,6 +88,8 @@ describe('ChatPanel', () => {
       cycleTarget: vi.fn(),
       updateAvailableTargets: vi.fn(),
       fetchMessages: vi.fn().mockResolvedValue(undefined),
+      getChatItems: mockGetChatItems,
+      getUnreadCount: mockGetUnreadCount,
     }));
 
     render(<ChatPanel />);
@@ -96,6 +113,8 @@ describe('ChatPanel', () => {
       cycleTarget: vi.fn(),
       updateAvailableTargets: vi.fn(),
       fetchMessages: vi.fn().mockResolvedValue(undefined),
+      getChatItems: mockGetChatItems,
+      getUnreadCount: mockGetUnreadCount,
     }));
 
     render(<ChatPanel />);
@@ -119,6 +138,8 @@ describe('ChatPanel', () => {
       cycleTarget: vi.fn(),
       updateAvailableTargets: vi.fn(),
       fetchMessages: vi.fn().mockResolvedValue(undefined),
+      getChatItems: mockGetChatItems,
+      getUnreadCount: mockGetUnreadCount,
     }));
 
     render(<ChatPanel />);
@@ -142,6 +163,8 @@ describe('ChatPanel', () => {
       cycleTarget: vi.fn(),
       updateAvailableTargets: vi.fn(),
       fetchMessages: vi.fn().mockResolvedValue(undefined),
+      getChatItems: mockGetChatItems,
+      getUnreadCount: mockGetUnreadCount,
     }));
 
     render(<ChatPanel />);
@@ -163,6 +186,8 @@ describe('ChatPanel', () => {
       cycleTarget: vi.fn(),
       updateAvailableTargets: vi.fn(),
       fetchMessages: vi.fn().mockResolvedValue(undefined),
+      getChatItems: mockGetChatItems,
+      getUnreadCount: mockGetUnreadCount,
     }));
 
     render(<ChatPanel />);

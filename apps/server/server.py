@@ -50,6 +50,8 @@ if ENV_PATH.exists():
 HOST = "127.0.0.1"
 PORT = 8081
 TOKEN = os.environ.get("ZOD_TOKEN", "zod-control-center-token")
+# Track file reads (Read tool) for diagram highlights - disabled by default
+TRACK_FILE_READS = os.environ.get("ZOD_TRACK_READS", "false").lower() == "true"
 
 # Paths relative to repo root
 REPO_ROOT = Path(__file__).parent.parent.parent
@@ -222,7 +224,10 @@ async def check_and_emit_diagram_events(
 
     # File modification tools that we track
     file_edit_tools = {"Write", "Edit", "MultiEdit"}
-    if tool_name not in file_edit_tools:
+    # Also track reads if enabled
+    file_read_tools = {"Read"} if TRACK_FILE_READS else set()
+    tracked_tools = file_edit_tools | file_read_tools
+    if tool_name not in tracked_tools:
         return
 
     # Extract file path from tool input
@@ -239,35 +244,41 @@ async def check_and_emit_diagram_events(
     # Check if file is mapped to a diagram node
     results = resolve_file_path(file_path, REPO_ROOT)
 
+    # Determine event type based on tool
+    is_read = tool_name == "Read"
+    highlight_event_type = "node_highlight_read" if is_read else "node_highlight"
+
     if not results:
-        # No mapping found - emit unmapped_edit event
-        await emit_diagram_event(
-            session_id=session_id,
-            source_app=source_app,
-            agent_name=agent_name,
-            event_type="unmapped_edit",
-            tool_name=tool_name,
-            tool_input={"file_path": file_path},
-            tool_output={},
-        )
-    else:
-        # File is mapped - check for diagram drift
-        drift_warnings = check_diagram_drift(file_path, REPO_ROOT)
-        for drift in drift_warnings:
+        # No mapping found - emit unmapped_edit event (only for writes)
+        if not is_read:
             await emit_diagram_event(
                 session_id=session_id,
                 source_app=source_app,
                 agent_name=agent_name,
-                event_type="diagram_drift",
+                event_type="unmapped_edit",
                 tool_name=tool_name,
-                tool_input={
-                    "file_path": file_path,
-                    "diagram": drift["diagram"],
-                    "node": drift["node"],
-                    "reason": drift["reason"],
-                },
+                tool_input={"file_path": file_path},
                 tool_output={},
             )
+    else:
+        # File is mapped - check for diagram drift (only for writes)
+        if not is_read:
+            drift_warnings = check_diagram_drift(file_path, REPO_ROOT)
+            for drift in drift_warnings:
+                await emit_diagram_event(
+                    session_id=session_id,
+                    source_app=source_app,
+                    agent_name=agent_name,
+                    event_type="diagram_drift",
+                    tool_name=tool_name,
+                    tool_input={
+                        "file_path": file_path,
+                        "diagram": drift["diagram"],
+                        "node": drift["node"],
+                        "reason": drift["reason"],
+                    },
+                    tool_output={},
+                )
 
         # Emit node_highlight event for the mapped node
         # Use the first (most specific) match
@@ -276,7 +287,7 @@ async def check_and_emit_diagram_events(
             session_id=session_id,
             source_app=source_app,
             agent_name=agent_name,
-            event_type="node_highlight",
+            event_type=highlight_event_type,
             tool_name=tool_name,
             tool_input={
                 "file_path": file_path,

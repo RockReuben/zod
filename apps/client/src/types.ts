@@ -14,10 +14,10 @@ export interface HookEvent {
 }
 
 /** Diagram-related event types */
-export type DiagramEventType = 'unmapped_edit' | 'diagram_drift' | 'node_highlight';
+export type DiagramEventType = 'unmapped_edit' | 'diagram_drift' | 'node_highlight' | 'node_highlight_read';
 
 export function isDiagramEvent(eventType: string): eventType is DiagramEventType {
-  return eventType === 'unmapped_edit' || eventType === 'diagram_drift' || eventType === 'node_highlight';
+  return eventType === 'unmapped_edit' || eventType === 'diagram_drift' || eventType === 'node_highlight' || eventType === 'node_highlight_read';
 }
 
 /** Node highlight information for diagram visualization */
@@ -51,12 +51,13 @@ export interface SessionInfo {
 
 /** Inbox message from server */
 export interface InboxMessage {
+  type: 'message';
   session_id: string | null;
   text: string;
   created_at: number;
 }
 
-/** Question from agent to user */
+/** Question from agent to user (server representation) */
 export interface Question {
   id: number;
   uuid: string;
@@ -67,6 +68,30 @@ export interface Question {
   status: 'pending' | 'answered';
   created_at: number;
   answered_at: number | null;
+}
+
+/** Question rendered inline in chat history */
+export interface QuestionMessage {
+  type: 'question';
+  id: number;
+  uuid: string;
+  session_id: string;
+  agent_name: string;
+  question_text: string;
+  answer_text: string | null;
+  status: 'pending' | 'answered';
+  created_at: number;
+  answered_at: number | null;
+  // For compatibility with InboxMessage display
+  text: string;
+}
+
+/** Union type for chat history items (messages + questions) */
+export type ChatItem = InboxMessage | QuestionMessage;
+
+/** Type guard for QuestionMessage */
+export function isQuestionMessage(item: ChatItem): item is QuestionMessage {
+  return item.type === 'question';
 }
 
 /** Speech Recognition API types (webkitSpeechRecognition / SpeechRecognition) */

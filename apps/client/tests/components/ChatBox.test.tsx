@@ -9,6 +9,15 @@ import { InboxMessage } from '../../src/types';
 // Mock the events store
 const mockMessagesMap = new Map<string, InboxMessage[]>();
 
+// Mock getChatItems to return messages from the mock map
+const mockGetChatItems = vi.fn((target: string) => {
+  return mockMessagesMap.get(target) || [];
+});
+
+const mockGetUnreadCount = vi.fn((target: string) => {
+  return (mockMessagesMap.get(target) || []).length;
+});
+
 vi.mock('../../src/stores/events', () => ({
   useEventsStore: vi.fn((selector) => selector({
     selectedTarget: 'lead',
@@ -47,6 +56,9 @@ vi.mock('../../src/stores/events', () => ({
     setFilter: vi.fn(),
     resetFilters: vi.fn(),
     addMessage: vi.fn(),
+    answerQuestion: vi.fn().mockResolvedValue(undefined),
+    getChatItems: mockGetChatItems,
+    getUnreadCount: mockGetUnreadCount,
   })),
 }));
 

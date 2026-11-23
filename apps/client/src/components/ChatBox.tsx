@@ -1,20 +1,21 @@
 import { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent } from 'react';
 import { useEventsStore } from '../stores/events';
 import { TargetSelector } from './TargetSelector';
-import { InboxMessage, SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../types';
+import { QuestionMessage, ChatItem, isQuestionMessage, SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../types';
 import { useShortcut } from '../hooks/useKeybindings';
 import './ChatBox.css';
 
 export function ChatBox() {
   const selectedTarget = useEventsStore((s) => s.selectedTarget);
-  const messagesMap = useEventsStore((s) => s.messages);
   const sendMessage = useEventsStore((s) => s.sendMessage);
   const cycleTarget = useEventsStore((s) => s.cycleTarget);
   const fetchMessages = useEventsStore((s) => s.fetchMessages);
+  const answerQuestion = useEventsStore((s) => s.answerQuestion);
+  const getChatItems = useEventsStore((s) => s.getChatItems);
 
-  const messages = useMemo(
-    () => messagesMap.get(selectedTarget) || [],
-    [messagesMap, selectedTarget]
+  const chatItems = useMemo(
+    () => getChatItems(selectedTarget),
+    [getChatItems, selectedTarget]
   );
 
   const [inputValue, setInputValue] = useState('');
@@ -53,7 +54,7 @@ export function ChatBox() {
     if (el && typeof el.scrollIntoView === 'function') {
       el.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [chatItems]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -205,17 +206,18 @@ export function ChatBox() {
 
       {/* Message history */}
       <div className="chat-messages" role="log" aria-live="polite" aria-label="Message history">
-        {messages.length === 0 ? (
+        {chatItems.length === 0 ? (
           <div className="chat-empty">
             <p>No messages for <strong>{selectedTarget}</strong></p>
             <p className="chat-empty-hint">Type a message below to start the conversation</p>
           </div>
         ) : (
-          messages.map((msg, idx) => (
-            <MessageItem
-              key={`${selectedTarget}-${msg.created_at}-${idx}`}
-              message={msg}
+          chatItems.map((item, idx) => (
+            <ChatItemRenderer
+              key={`${selectedTarget}-${item.created_at}-${idx}`}
+              item={item}
               target={selectedTarget}
+              onAnswerQuestion={answerQuestion}
             />
           ))
         )}
@@ -284,19 +286,29 @@ export function ChatBox() {
   );
 }
 
-function MessageItem({ message, target }: { message: InboxMessage; target: string }) {
-  const time = new Date(message.created_at * 1000).toLocaleTimeString([], {
+interface ChatItemRendererProps {
+  item: ChatItem;
+  target: string;
+  onAnswerQuestion: (questionId: number, answer: string) => Promise<void>;
+}
+
+function ChatItemRenderer({ item, target, onAnswerQuestion }: ChatItemRendererProps) {
+  const time = new Date(item.created_at * 1000).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
   });
 
-  const sessionLabel = message.session_id
-    ? ` (${message.session_id.slice(0, 8)})`
+  const sessionLabel = item.session_id
+    ? ` (${item.session_id.slice(0, 8)})`
     : '';
 
-  // Determine if this is an incoming message (has session_id) or sent by us
-  const isIncoming = !!message.session_id;
+  if (isQuestionMessage(item)) {
+    return <QuestionItem question={item} onAnswerQuestion={onAnswerQuestion} time={time} sessionLabel={sessionLabel} />;
+  }
+
+  // Regular message
+  const isIncoming = !!item.session_id;
 
   return (
     <div className={`chat-message ${isIncoming ? 'incoming' : 'outgoing'}`}>
@@ -306,7 +318,106 @@ function MessageItem({ message, target }: { message: InboxMessage; target: strin
         </span>
         <span className="chat-message-time">{time}{sessionLabel}</span>
       </div>
-      <div className="chat-message-text">{message.text}</div>
+      <div className="chat-message-text">{item.text}</div>
+    </div>
+  );
+}
+
+function QuestionItem({ question, onAnswerQuestion, time, sessionLabel }: {
+  question: QuestionMessage;
+  onAnswerQuestion: (questionId: number, answer: string) => Promise<void>;
+  time: string;
+  sessionLabel: string;
+}) {
+  const [isAnswering, setIsAnswering] = useState(false);
+  const [answerText, setAnswerText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const answerRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (isAnswering && answerRef.current) {
+      answerRef.current.focus();
+    }
+  }, [isAnswering]);
+
+  const handleAnswerSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const text = answerText.trim();
+    if (!text || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await onAnswerQuestion(question.id, text);
+      setIsAnswering(false);
+      setAnswerText('');
+    } catch {
+      setError('Failed to send answer. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsAnswering(false);
+    setAnswerText('');
+    setError(null);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleAnswerSubmit(event);
+    }
+  };
+
+  // If answered, don't render (will be filtered out by getChatItems)
+  if (question.status === 'answered') {
+    return null;
+  }
+
+  return (
+    <div className="chat-message question incoming">
+      <div className="chat-message-header">
+        <span className="chat-message-target question-badge">❓ Question from {question.agent_name}</span>
+        <span className="chat-message-time">{time}{sessionLabel}</span>
+      </div>
+      <div className="chat-message-text question-text">{question.question_text}</div>
+
+      {!isAnswering ? (
+        <button
+          className="question-answer-btn"
+          onClick={() => setIsAnswering(true)}
+          type="button"
+        >
+          Answer
+        </button>
+      ) : (
+        <form className="question-answer-form" onSubmit={handleAnswerSubmit}>
+          <textarea
+            ref={answerRef}
+            className="question-answer-input"
+            value={answerText}
+            onChange={(e) => setAnswerText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type your answer..."
+            rows={3}
+            disabled={isSubmitting}
+            aria-label="Your answer"
+          />
+          {error && <div className="question-error" role="alert">{error}</div>}
+          <div className="question-answer-actions">
+            <button type="button" className="btn-cancel" onClick={handleCancel} disabled={isSubmitting}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-submit" disabled={!answerText.trim() || isSubmitting}>
+              {isSubmitting ? '⏳' : 'Send Answer'}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

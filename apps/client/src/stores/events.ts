@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { HookEvent, SessionLane, NodeHighlight, InboxMessage } from '../types';
+import { HookEvent, SessionLane, NodeHighlight, InboxMessage, QuestionMessage, ChatItem } from '../types';
 import { getAgentColor } from '../utils/agentColors';
 
 const MAX_EVENTS = 1000;
@@ -7,7 +7,8 @@ const HIGHLIGHT_FADE_MS = 10000; // 10 seconds
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8081';
 const TOKEN = import.meta.env.VITE_TOKEN || 'zod-control-center-token';
 
-export interface Question {
+/** Question as stored from server (before conversion to QuestionMessage) */
+export interface ServerQuestion {
   id: number;
   uuid: string;
   session_id: string;
@@ -56,7 +57,7 @@ interface EventsState {
   messagePollingInterval: ReturnType<typeof setInterval> | null;
 
   // Question state
-  questions: Question[];
+  questions: ServerQuestion[];
   questionsPollingInterval: ReturnType<typeof setInterval> | null;
 
   addEvent: (event: HookEvent) => void;
@@ -100,10 +101,14 @@ interface EventsState {
   // Question actions
   fetchQuestions: () => Promise<void>;
   answerQuestion: (questionId: number, answer: string) => Promise<void>;
-  addQuestion: (question: Question) => void;
-  updateQuestion: (questionId: number, updates: Partial<Question>) => void;
+  addQuestion: (question: ServerQuestion) => void;
+  updateQuestion: (questionId: number, updates: Partial<ServerQuestion>) => void;
   startQuestionsPolling: () => void;
   stopQuestionsPolling: () => void;
+
+  // Chat items selector (merges messages + questions for a target)
+  getChatItems: (target: string) => ChatItem[];
+  getUnreadCount: (target: string) => number;
 }
 
 const initialFilters: FilterState = {
@@ -145,8 +150,8 @@ const useEventsStore = create<EventsState>((set, get) => ({
     }
     set({ events: newEvents });
 
-    // Handle node_highlight events
-    if (event.event_type === 'node_highlight' && event.tool_input) {
+    // Handle node_highlight and node_highlight_read events
+    if ((event.event_type === 'node_highlight' || event.event_type === 'node_highlight_read') && event.tool_input) {
       const { diagram, node } = event.tool_input;
       if (diagram && node) {
         get().addHighlight({
@@ -476,13 +481,13 @@ const useEventsStore = create<EventsState>((set, get) => ({
     }
   },
 
-  addQuestion: (question: Question) => {
+  addQuestion: (question: ServerQuestion) => {
     set((state) => ({
       questions: [question, ...state.questions.filter((q) => q.id !== question.id)],
     }));
   },
 
-  updateQuestion: (questionId: number, updates: Partial<Question>) => {
+  updateQuestion: (questionId: number, updates: Partial<ServerQuestion>) => {
     set((state) => ({
       questions: state.questions.map((q) =>
         q.id === questionId ? { ...q, ...updates } : q
@@ -509,6 +514,42 @@ const useEventsStore = create<EventsState>((set, get) => ({
       clearInterval(questionsPollingInterval);
       set({ questionsPollingInterval: null });
     }
+  },
+
+  // Chat items selector - merges messages and questions for a target
+  getChatItems: (target: string) => {
+    const { messages, questions } = get();
+    const targetMessages = messages.get(target) || [];
+
+    // Filter questions that should appear for this target
+    // Questions appear in 'lead' target and when chatting with the specific agent
+    const relevantQuestions = questions
+      .filter(q => q.status === 'pending')
+      .filter(q => target === 'lead' || target === q.agent_name)
+      .map(q => ({
+        ...q,
+        type: 'question' as const,
+        text: q.question_text, // For compatibility with InboxMessage display
+      })) as QuestionMessage[];
+
+    // Combine and sort by created_at
+    const allItems: ChatItem[] = [
+      ...targetMessages.map(m => ({ ...m } as ChatItem)),
+      ...relevantQuestions,
+    ].sort((a, b) => a.created_at - b.created_at);
+
+    return allItems;
+  },
+
+  // Unread count includes both unread messages and pending questions
+  getUnreadCount: (target: string) => {
+    const { messages, questions } = get();
+    const targetMessages = messages.get(target) || [];
+    const unreadMessages = targetMessages.length; // All messages in store are "unread" until viewed
+    const unreadQuestions = questions.filter(
+      q => q.status === 'pending' && (target === 'lead' || target === q.agent_name)
+    ).length;
+    return unreadMessages + unreadQuestions;
   },
 }));
 

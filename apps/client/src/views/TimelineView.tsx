@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useEventStream } from '../hooks/useEventStream';
 import { useEventsStore } from '../stores/events';
 import { HookEvent, ConnectionStatus, isDiagramEvent } from '../types';
@@ -10,6 +10,8 @@ function getEventColor(eventType: string): string {
   if (isDiagramEvent(eventType)) {
     if (eventType === 'unmapped_edit') return '#f97316';
     if (eventType === 'diagram_drift') return '#dc2626';
+    if (eventType === 'node_highlight') return '#3b82f6'; // blue for writes
+    if (eventType === 'node_highlight_read') return '#06b6d4'; // cyan for reads
   }
   if (eventType.startsWith('Pre')) return '#3b82f6';
   if (eventType.startsWith('Post')) return '#22c55e';
@@ -44,6 +46,10 @@ export function TimelineView() {
   const events = useEventsStore((s) => s.events);
   const filters = useEventsStore((s) => s.filters);
   const getAvailableFilters = useEventsStore((s) => s.getAvailableFilters);
+  const timelineListRef = useRef<HTMLDivElement>(null);
+  const prevEventCountRef = useRef(events.length);
+  const isUserScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Apply filters to events
   const filteredEvents = useMemo(() => {
@@ -73,6 +79,32 @@ export function TimelineView() {
       unfiltered: events.length,
     };
   }, [filteredEvents, events.length]);
+
+  // Auto-scroll to bottom when new events arrive (if user isn't manually scrolling)
+  useEffect(() => {
+    if (events.length > prevEventCountRef.current) {
+      // New events arrived - auto-scroll if user isn't actively scrolling
+      if (!isUserScrollingRef.current && timelineListRef.current) {
+        timelineListRef.current.scrollTop = timelineListRef.current.scrollHeight;
+      }
+      prevEventCountRef.current = events.length;
+    }
+  }, [events.length]);
+
+  // Track user scrolling to temporarily disable auto-scroll
+  const handleScroll = () => {
+    isUserScrollingRef.current = true;
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    scrollTimeoutRef.current = setTimeout(() => {
+      isUserScrollingRef.current = false;
+      // Re-enable auto-scroll after user stops scrolling
+      if (timelineListRef.current) {
+        timelineListRef.current.scrollTop = timelineListRef.current.scrollHeight;
+      }
+    }, 1000);
+  };
 
   const getStatusColor = (status: ConnectionStatus): string => {
     switch (status) {
@@ -128,7 +160,14 @@ export function TimelineView() {
       <DiagramEventsIndicator events={events} />
 
       {/* Events List - Vertical, bottom-ordered */}
-      <main className="timeline-list" role="log" aria-live="polite" aria-label="Event timeline">
+      <main
+        ref={timelineListRef}
+        className="timeline-list"
+        role="log"
+        aria-live="polite"
+        aria-label="Event timeline"
+        onScroll={handleScroll}
+      >
         {sortedEvents.length === 0 ? (
           <div className="timeline-empty">
             <div className="empty-icon">📡</div>

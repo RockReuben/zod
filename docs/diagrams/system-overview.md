@@ -3,95 +3,97 @@
 ```mermaid
 flowchart TD
     subgraph Agents["Claude Code Agents"]
-        A1["Agent 1
+        node-agent1["Agent 1
 (worktree/pkg-a)"]
-        A2["Agent 2
+        node-agent2["Agent 2
 (worktree/pkg-b)"]
-        A3["Agent N
+        node-agentN["Agent N
 (worktree/pkg-n)"]
     end
 
     subgraph Hooks["Hook Forwarders"]
-        H1[".claude/hooks/send_event.py"]
-        H2[".claude/hooks/check_inbox_stop.py"]
+        node-hooks[".claude/hooks/send_event.py"]
+        node-check_inbox[".claude/hooks/check_inbox_stop.py"]
     end
 
     subgraph Server["Event Server (apps/server)"]
-        S1["HTTP POST /events"]
-        S2["SQLite Database
-(var/events.db)"]
-        S3["WebSocket Broadcast
-/ws"]
-        S4["POST /messages
-GET /messages/:target"]
-        S8["POST /messages/consume
-(atomic consume)"]
-        S5["GET /diagrams/:name"]
-        S6["GET /events
-(historical)"]
-        S7["GET /sessions
+        node-server["HTTP POST /events
+SQLite Database
+(var/events.db)
+WebSocket Broadcast
+/ws
+POST /messages
+GET /messages/:target
+POST /messages/consume
+(atomic consume)
+GET /diagrams/:name
+GET /events
+(historical)
+GET /sessions
 (list)"]
     end
 
     subgraph Client["Web UI (apps/client)"]
-        C1["Timeline View
-+ Filter Bar"]
-        C2["Replay Controls
+        node-client["Timeline View
++ Filter Bar
+Replay Controls
 (Session Selector, Speed, Progress)"]
     end
 
-    subgraph Repo["Repository"]
-        R1["docs/diagrams/
-system-overview.md"]
-        R2["diagram-map.yaml"]
-        R3["docs/plans/"]
+    subgraph Database["Database"]
+        node-database["SQLite Database
+(var/events.db)"]
     end
 
-    A1 -.->|Hook Events
-HTTP POST| H1
-    A2 -.->|Hook Events
-HTTP POST| H1
-    A3 -.->|Hook Events
-HTTP POST| H1
+    subgraph Repo["Repository"]
+        node-planning["diagram-map.yaml
+docs/plans/
+docs/diagrams/
+system-overview.md"]
+    end
 
-    H1 -->|POST /events| S1
-    S1 --> S2
-    S2 --> S3
-    S3 -.->|WebSocket
-Event Stream| C1
+    node-agent1 -.->|Hook Events
+HTTP POST| node-hooks
+    node-agent2 -.->|Hook Events
+HTTP POST| node-hooks
+    node-agentN -.->|Hook Events
+HTTP POST| node-hooks
 
-    C1 -->|POST /messages| S4
-    S4 --> S2
+    node-hooks -->|POST /events| node-server
+    node-server --> node-database
+    node-database --> node-server
+    node-server -.->|WebSocket
+Event Stream| node-client
 
-    H2 -->|POST /messages/consume| S8
-    S8 --> S2
-    S2 -.->|Stop Hook
-Reads Inbox| H2
+    node-client -->|POST /messages| node-server
+    node-server --> node-database
 
-    C1 -->|GET /diagrams/:name| S5
-    S5 --> R1
+    node-check_inbox -->|POST /messages/consume| node-server
+    node-server --> node-database
+    node-database -.->|Stop Hook
+Reads Inbox| node-check_inbox
 
-    C2 -->|GET /sessions| S7
-    C2 -->|GET /events?session_id=...| S6
-    S6 --> S2
-    S7 --> S2
+    node-client -->|GET /diagrams/:name| node-server
+    node-server --> node-planning
 
     classDef agent fill:#e8f4fd,stroke:#1a73e8,color:#1a73e8;
     classDef hook fill:#fff3e0,stroke:#f57c00,color:#f57c00;
     classDef server fill:#e8f5e9,stroke:#2e7d32,color:#2e7d32;
     classDef client fill:#f3e5f5,stroke:#7b1fa2,color:#7b1fa2;
+    classDef database fill:#fce4ec,stroke:#c2185b,color:#c2185b;
     classDef repo fill:#fafafa,stroke:#757575,color:#757575;
 
-    class A1,A2,A3 agent;
-    class H1,H2 hook;
-    class S1,S2,S3,S4,S5,S6,S7,S8 server;
-    class C1,C2 client;
-    class R1,R2,R3 repo;
+    class node-agent1,node-agent2,node-agentN agent;
+    class node-hooks,node-check_inbox hook;
+    class node-server server;
+    class node-client client;
+    class node-database database;
+    class node-planning repo;
 ```
 
 **Node IDs for diagram-map.yaml:**
-- `hooks` - Hook forwarder script
-- `server` - Event server (HTTP, WebSocket, Database)
-- `database` - SQLite database
-- `client` - Web UI client
-- `timeline` - Timeline view panel
+- `hooks` - Hook forwarder script (node-hooks)
+- `server` - Event server (node-server)
+- `database` - SQLite database (node-database)
+- `client` - Web UI client (node-client)
+- `planning` - Repository planning files (node-planning)
