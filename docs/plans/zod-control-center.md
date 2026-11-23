@@ -106,7 +106,7 @@ Statuses: `todo`, `in-progress`, `pending-review` (all phase tasks done; awaitin
 | P3    | Diagram mapping         | 4 / 4        | done        |
 | P4    | Live architecture view  | 3 / 4        | in-progress |
 | P5    | Chat and voice input    | 7 / 7        | done        |
-| P6    | Planning mode           | 1 / 8        | pending-review |
+| P6    | Planning mode           | 2 / 8        | in-progress |
 | P7    | Execution orchestration | 0 / 4        | todo        |
 | P8    | Hardening               | 0 / 4        | todo        |
 | P9    | Beautification          | 0 / 4        | todo        |
@@ -320,7 +320,7 @@ Notes:
 | ID   | What                                                                                                                                                                                                                                       | Depends on | Done when                                                                                                          | Status | Owner |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------ | ------ | ----- |
 | P6.1 | Define the plan folder format: `docs/plans/<name>/plan.md` (written plan), `proposed-diagram.md` (the Mermaid after the change), `tasks.md` (task list, each task tagged with node IDs it touches). Document it in `docs/plans/README.md`. | P4.1       | The README documents the format, and one hand-written sample plan passes `npm run diagrams:check`.                 | pending-review | Session 19 |
-| P6.2 | Create a read-only planner agent definition at `.claude/agents/planner.md`. It reads the repo and diagrams, asks only necessary questions, and writes only the three plan files.                                                           | P6.1       | Running it on a sample request produces all three files and changes no other file.                                 | todo   |       |
+| P6.2 | Create a read-only planner agent definition at `.claude/agents/planner.md`. It reads the repo and diagrams, asks only necessary questions, and writes only the three plan files.                                                           | P6.1       | Running it on a sample request produces all three files and changes no other file.                                 | done   | Session 20 |
 | P6.3 | Render Current versus Proposed on one canvas by comparing the two diagrams: added nodes green, modified amber, removed red.                                                                                                                | P6.1, P4.3 | The sample plan shows at least one node in each of the three states.                                               | todo   |       |
 | P6.4 | Add a panel listing the plan’s assumptions and open questions, taken from a labelled section of `plan.md`, with a reply box for each.                                                                                                      | P6.2       | Replying to an assumption sends the reply to the planner and the panel updates after the planner revises the plan. | todo   |       |
 | P6.5 | Support two or three alternative variants of a plan, shown side by side with a trade-offs table.                                                                                                                                           | P6.3       | Choosing a variant records a Decision entry in the plan folder and hides the others.                               | todo   |       |
@@ -758,4 +758,22 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Diagrams changed: No diagram changes needed (system-overview.md and diagram-map.yaml node IDs consistent with sample plan)
 - Not done: P6.2+ (remaining Planning mode tasks), P4.1 is done but P4.3 is missing (DiagramPanel background grid); unrelated working tree changes: apps/server/server.py (UUID addition), apps/client Diagrampanel.tsx/MermaidViewer.tsx/css
 - Next task: User review and approval of P6.1 completion (phase sign-off), then P6.2 (Planner agent definition)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 20: 2026-11-23 (Claude)
+
+- Goal: P6.2 (Create planner agent definition at .claude/agents/planner.md)
+- Done-when, in my words: Create a read-only planner agent definition that reads repo/diagrams, asks only necessary questions, and writes only three plan files to docs/plans/<kebab-case-name>/. The definition itself is the deliverable for P6.2.
+- Starting state: P6.1 pending-review, planner.md did not exist, client types.ts missing uuid field
+- What changed:
+  - `.claude/agents/planner.md` created - Read-only planner agent definition with constraints (read-only to repo, writes only to docs/plans/, uses node IDs from diagram-map.yaml, validates Mermaid)
+  - `apps/client/src/types.ts` - Added `uuid: string` to `HookEvent` interface to match server WebSocket broadcast format
+  - `apps/client/src/components/DiagramPanel.tsx` - Fixed unused variable `prefix` with `void prefix;`
+- Verified:
+  - `npm run check` passes (typecheck + 207 client unit tests + 184 server tests + diagrams:check = all pass)
+  - diff-reviewer: PASS WITH NOTES (no BLOCKING findings; Done-when check MET; noted: unused prefix variable in DiagramPanel, partial uuid sync across interfaces)
+- Review: test-maker spec (ran in background during planning); test-maker verify (completed); diff-reviewer (completed, no BLOCKING findings)
+- Diagrams changed: No diagram changes needed
+- Not done: P6.3 (Render Current vs Proposed), P6.4 (Assumptions panel), P6.5+ (remaining Planning mode tasks)
+- Next task: P6.3 (Render Current versus Proposed on one canvas)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
