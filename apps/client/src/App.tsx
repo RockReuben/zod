@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { TimelineView } from './views/TimelineView';
 import { DiagramPanel } from './components/DiagramPanel';
 import { ChatPanel } from './components/ChatPanel';
-import { QuestionsPanel } from './components/QuestionsPanel';
+import { ControlPane } from './components/ControlPane';
 import { useEventsStore } from './stores/events';
 import { useShortcut } from './hooks/useKeybindings';
 import { useEventStream } from './hooks/useEventStream';
@@ -14,8 +14,6 @@ function App() {
   const clearExpiredHighlights = useEventsStore((s) => s.clearExpiredHighlights);
   const updateAvailableTargets = useEventsStore((s) => s.updateAvailableTargets);
   const events = useEventsStore((s) => s.events);
-  const startQuestionsPolling = useEventsStore((s) => s.startQuestionsPolling);
-  const stopQuestionsPolling = useEventsStore((s) => s.stopQuestionsPolling);
 
   // Initialize WebSocket event stream
   useEventStream();
@@ -33,12 +31,6 @@ function App() {
     updateAvailableTargets();
   }, [events, updateAvailableTargets]);
 
-  // Start questions polling
-  useEffect(() => {
-    startQuestionsPolling();
-    return () => stopQuestionsPolling();
-  }, [startQuestionsPolling, stopQuestionsPolling]);
-
   // Initialize shortcuts (this loads the keybindings config)
   useShortcut('toggleChatPanel', () => {}, []);
   useShortcut('focusChat', () => {}, []);
@@ -46,33 +38,25 @@ function App() {
 
   return (
     <div className="app-layout">
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <h2>Architecture</h2>
-        </div>
-        <nav className="diagram-nav">
-          <button
-            className={`diagram-nav-item ${activeDiagram === 'system-overview' ? 'active' : ''}`}
-            onClick={() => setActiveDiagram('system-overview')}
-          >
-            System Overview
-          </button>
-          {/* Future diagrams can be added here */}
-        </nav>
+      {/* Left Pane: Control Panel */}
+      <ControlPane
+        activeDiagram={activeDiagram}
+        onDiagramChange={setActiveDiagram}
+      />
+
+      {/* Center Pane: Diagram Canvas */}
+      <main className="main-content">
+        <DiagramPanel diagramName={activeDiagram} highlights={highlights} />
+      </main>
+
+      {/* Right Pane: Vertical Timeline */}
+      <aside className="timeline-pane">
+        <TimelineView />
       </aside>
-      <div className="content-column">
-        <main className="main-content">
-          <DiagramPanel diagramName={activeDiagram} highlights={highlights} />
-        </main>
-        <div className="timeline-section">
-          <TimelineView />
-        </div>
-        <div className="questions-panel-container">
-          <QuestionsPanel />
-        </div>
-        <div className="chat-panel-container">
-          <ChatPanel />
-        </div>
+
+      {/* Floating Chat Panel at bottom center */}
+      <div className="chat-panel-container">
+        <ChatPanel />
       </div>
     </div>
   );

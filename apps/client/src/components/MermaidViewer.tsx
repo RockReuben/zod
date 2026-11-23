@@ -1,12 +1,10 @@
-import { useEffect, useRef, useState, useId } from 'react';
+import { useEffect, useRef, useState, useId, useCallback } from 'react';
 import mermaid from 'mermaid';
 import svgPanZoom from 'svg-pan-zoom';
 
-type SvgPanZoomInstance = ReturnType<typeof svgPanZoom>;
-
 /**
  * Reusable Mermaid diagram viewer with pan/zoom, auto-fit, and responsive resize.
- * Keeps diagrams centered, scales to fit container, and supports pan/zoom controls.
+ * Can render as a full-screen background layer with optional grid pattern.
  */
 interface MermaidViewerProps {
   /** The raw mermaid diagram code (not markdown-wrapped) */
@@ -17,12 +15,22 @@ interface MermaidViewerProps {
   onError?: (error: string) => void;
   /** Optional callback when render succeeds */
   onRendered?: () => void;
-  /** CSS class for the outer wrapper (must have explicit width/height) */
+  /** CSS class for the outer wrapper */
   wrapperClass?: string;
   /** CSS class for the inner SVG container */
   containerClass?: string;
   /** Optional test ID for testing */
   testId?: string;
+  /** Whether to render as full-screen background (fixed position, covers viewport) */
+  asBackground?: boolean;
+  /** Whether to show grid pattern in the diagram (Mermaid flowchart grid option) */
+  showGrid?: boolean;
+  /** Grid color (CSS color string) */
+  gridColor?: string;
+  /** Grid line thickness */
+  gridThickness?: number;
+  /** Opacity of the background diagram (0-1) */
+  backgroundOpacity?: number;
 }
 
 export function MermaidViewer({
@@ -33,10 +41,15 @@ export function MermaidViewer({
   wrapperClass = 'mermaid-viewer-wrapper',
   containerClass = 'mermaid-viewer-container',
   testId,
+  asBackground = false,
+  showGrid = false,
+  gridColor = '#334155',
+  gridThickness = 1,
+  backgroundOpacity = 0.15,
 }: MermaidViewerProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const panZoomRef = useRef<SvgPanZoomInstance | null>(null);
+  const panZoomRef = useRef<ReturnType<typeof svgPanZoom> | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const renderIdRef = useRef(0);
   const isMountedRef = useRef(true);
@@ -48,12 +61,28 @@ export function MermaidViewer({
 
   // Initialize mermaid once with optimal settings
   useEffect(() => {
+    const flowchartConfig: Record<string, unknown> = {
+      useMaxWidth: false,
+      htmlLabels: true,
+      curve: 'basis',
+    };
+
+    // Add grid configuration if enabled
+    if (showGrid) {
+      flowchartConfig.grid = {
+        pattern: 'dots',
+        color: gridColor,
+        thickness: gridThickness,
+        spacing: 40,
+      };
+    }
+
     mermaid.initialize({
       startOnLoad: false,
       theme: 'default',
       securityLevel: 'loose',
       // Disable useMaxWidth so Mermaid outputs natural SVG dimensions
-      flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis' },
+      flowchart: flowchartConfig,
       sequence: { useMaxWidth: false },
       class: { useMaxWidth: false },
       state: { useMaxWidth: false },
@@ -65,9 +94,9 @@ export function MermaidViewer({
       mindmap: { useMaxWidth: false },
       timeline: { useMaxWidth: false },
     });
-  }, []);
+  }, [showGrid, gridColor, gridThickness]);
 
-  const destroyPanZoom = () => {
+  const destroyPanZoom = useCallback(() => {
     if (panZoomRef.current) {
       panZoomRef.current.destroy();
       panZoomRef.current = null;
@@ -76,9 +105,9 @@ export function MermaidViewer({
       resizeObserverRef.current.disconnect();
       resizeObserverRef.current = null;
     }
-  };
+  }, []);
 
-  const initializePanZoom = (svgEl: SVGSVGElement) => {
+  const initializePanZoom = useCallback((svgEl: SVGSVGElement) => {
     // Strip Mermaid's restrictive inline styles
     svgEl.removeAttribute('height');
     svgEl.removeAttribute('width');
@@ -118,7 +147,7 @@ export function MermaidViewer({
       });
       resizeObserverRef.current.observe(wrapperRef.current);
     }
-  };
+  }, []);
 
   const renderChart = async () => {
     if (!containerRef.current || !chart.trim()) {
@@ -185,7 +214,7 @@ export function MermaidViewer({
       isMountedRef.current = false;
       destroyPanZoom();
     };
-  }, [chart, key]);
+  }, [chart, key, showGrid, gridColor, gridThickness]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -225,9 +254,31 @@ export function MermaidViewer({
     );
   }
 
+  const wrapperStyles: React.CSSProperties = asBackground
+    ? {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 0,
+        pointerEvents: 'none',
+        opacity: backgroundOpacity,
+      }
+    : { width: '100%', height: '100%' };
+
+  const containerStyles: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+  };
+
   return (
-    <div className={wrapperClass} ref={wrapperRef} style={{ width: '100%', height: '100%' }}>
-      <div className={containerClass} ref={containerRef} style={{ width: '100%', height: '100%' }} data-testid={testId} />
+    <div
+      className={wrapperClass}
+      ref={wrapperRef}
+      style={wrapperStyles}
+    >
+      <div className={containerClass} ref={containerRef} style={containerStyles} data-testid={testId} />
     </div>
   );
 }
@@ -237,7 +288,7 @@ export function useMermaidRenderer() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const panZoomRef = useRef<SvgPanZoomInstance | null>(null);
+  const panZoomRef = useRef<ReturnType<typeof svgPanZoom> | null>(null);
   const renderIdRef = useRef(0);
   const isMountedRef = useRef(true);
 

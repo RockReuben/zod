@@ -139,6 +139,9 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
 
   return (
     <div className="diagram-panel" role="img" aria-label={`Architecture diagram: ${diagramName}`} style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Zod badge floating over diagram */}
+      <div className="zod-badge" aria-hidden="true">Zod</div>
+
       <div className="diagram-panel-inner" style={{ flex: 1, height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
         <MermaidViewer
           chart={mermaidCode}
@@ -148,6 +151,11 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
           wrapperClass="mermaid-viewer-wrapper"
           containerClass="mermaid-viewer-container"
           testId="diagram-container"
+          asBackground={true}
+          showGrid={true}
+          gridColor="#334155"
+          gridThickness={1}
+          backgroundOpacity={0.12}
         />
       </div>
     </div>

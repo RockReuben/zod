@@ -1,0 +1,207 @@
+/* Left Control Pane */
+.control-pane {
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  height: 100vh;
+  background: var(--bg-secondary, #1e1e1e);
+  border-right: 1px solid var(--border-color, #333);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .control-pane {
+    --bg-secondary: #1e293b;
+    --border-color: #334155;
+  }
+}
+
+/* Header */
+.control-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color, #333);
+}
+
+.control-pane-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #e0e0e0);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Status Badge */
+.control-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--badge-bg, #334155);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.control-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-color);
+  box-shadow: 0 0 6px var(--status-color);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.control-status-text {
+  color: var(--text-secondary, #cbd5e1);
+}
+
+/* Sections */
+.control-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.control-select {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--bg-primary, #0f172a);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  color: var(--text-primary, #e0e0e0);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.control-select:focus {
+  outline: none;
+  border-color: var(--accent-color, #1a73e8);
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.control-select:hover {
+  border-color: var(--accent-color, #1a73e8);
+}
+
+/* Stats */
+.control-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.control-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  background: var(--bg-tertiary, #252525);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 8px;
+}
+
+.control-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #e0e0e0);
+  line-height: 1;
+}
+
+.control-stat-label {
+  font-size: 10px;
+  color: var(--text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+/* Reset Button */
+.control-reset-btn {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-secondary, #888);
+  background: transparent;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.control-reset-btn:hover:not(:disabled) {
+  color: var(--text-primary, #e0e0e0);
+  border-color: var(--accent-color, #1a73e8);
+  background: var(--accent-bg, rgba(26, 115, 232, 0.1));
+}
+
+.control-reset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.control-reset-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-color, #1a73e8);
+}
+
+/* Scrollbar */
+.control-pane::-webkit-scrollbar {
+  width: 6px;
+}
+
+.control-pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.control-pane::-webkit-scrollbar-thumb {
+  background: var(--border-color, #333);
+  border-radius: 3px;
+}
+
+.control-pane::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted, #888);
+}
+
+/* Mobile responsive */
+@media (max-width: 1024px) {
+  .control-pane {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .control-pane.open {
+    transform: translateX(0);
+  }
+}

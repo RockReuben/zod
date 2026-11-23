@@ -311,6 +311,7 @@ Notes:
 | P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer.                                                                                    | P5.2       | A question posted by a script appears in the UI, and the answer is retrievable by the asker.           | done   | Session 14 |
 | P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box.                                                                                                            | P5.2       | Speaking a sentence puts its text in the box, which the user can edit before sending.                  | done   | Session 15 |
 | P5.6 | Route messages with no target to the lead agent, and support `@name` addressing.                                                                                                                            | P5.2       | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox.    | todo   |            |
+| P5.7 | Integrate QuestionsPanel into ChatPanel as inline prompts (questions appear in chat history with answer input, replacing standalone QuestionsPanel). | P5.4       | Agent questions appear in chat with answer box; answering removes prompt from chat. | todo   |            |
 
 Notes:
 
