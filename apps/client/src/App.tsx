@@ -1,10 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TimelineView } from './views/TimelineView';
 import { DiagramPanel } from './components/DiagramPanel';
+import { useEventsStore } from './stores/events';
 import './index.css';
 
 function App() {
   const [activeDiagram, setActiveDiagram] = useState<string>('system-overview');
+  const highlights = useEventsStore((s) => s.highlights);
+  const clearExpiredHighlights = useEventsStore((s) => s.clearExpiredHighlights);
+
+  // Clear expired highlights every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      clearExpiredHighlights();
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [clearExpiredHighlights]);
 
   return (
     <div className="app-layout">
@@ -24,7 +35,7 @@ function App() {
       </aside>
       <div className="content-column">
         <main className="main-content">
-          <DiagramPanel diagramName={activeDiagram} />
+          <DiagramPanel diagramName={activeDiagram} highlights={highlights} />
         </main>
         <div className="timeline-section">
           <TimelineView />

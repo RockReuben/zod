@@ -1,7 +1,9 @@
 import { create } from 'zustand';
-import { HookEvent, SessionLane } from '../types';
+import { HookEvent, SessionLane, NodeHighlight } from '../types';
+import { getAgentColor } from '../utils/agentColors';
 
 const MAX_EVENTS = 1000;
+const HIGHLIGHT_FADE_MS = 10000; // 10 seconds
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8081';
 const TOKEN = import.meta.env.VITE_TOKEN || 'zod-control-center-token';
 
@@ -32,6 +34,7 @@ interface EventsState {
   events: HookEvent[];
   filters: FilterState;
   replay: ReplayState;
+  highlights: NodeHighlight[];
   addEvent: (event: HookEvent) => void;
   setFilter: (key: keyof FilterState, value: string) => void;
   resetFilters: () => void;
@@ -51,6 +54,12 @@ interface EventsState {
   setReplaySpeed: (speed: number) => void;
   setReplayProgress: (progress: number) => void;
   addHistoricalEvent: (event: HookEvent) => void;
+
+  // Highlight actions
+  addHighlight: (highlight: Omit<NodeHighlight, 'color'>) => void;
+  removeHighlight: (node: string, agentName: string) => void;
+  clearExpiredHighlights: () => void;
+  clearAllHighlights: () => void;
 }
 
 const initialFilters: FilterState = {
@@ -71,6 +80,7 @@ const useEventsStore = create<EventsState>((set, get) => ({
   events: [],
   filters: { ...initialFilters },
   replay: { ...initialReplay },
+  highlights: [],
 
   addEvent: (event: HookEvent) => {
     const { events, replay } = get();
@@ -82,6 +92,19 @@ const useEventsStore = create<EventsState>((set, get) => ({
       newEvents.splice(0, newEvents.length - MAX_EVENTS);
     }
     set({ events: newEvents });
+
+    // Handle node_highlight events
+    if (event.event_type === 'node_highlight' && event.tool_input) {
+      const { diagram, node } = event.tool_input;
+      if (diagram && node) {
+        get().addHighlight({
+          node: node as string,
+          agentName: event.agent_name,
+          diagram: diagram as string,
+          timestamp: (event.timestamp ?? Date.now() / 1000) * 1000, // Convert to ms
+        });
+      }
+    }
   },
 
   setFilter: (key, value) => {
@@ -212,6 +235,50 @@ const useEventsStore = create<EventsState>((set, get) => ({
       newEvents.splice(0, newEvents.length - MAX_EVENTS);
     }
     set({ events: newEvents });
+  },
+
+  // Highlight actions
+  addHighlight: (highlight: Omit<NodeHighlight, 'color'>) => {
+    const { highlights } = get();
+    const color = getAgentColor(highlight.agentName);
+    const newHighlight: NodeHighlight = { ...highlight, color };
+
+    // Check if highlight for same agent+node already exists (refresh timestamp)
+    const existingIdx = highlights.findIndex(
+      (h) => h.node === highlight.node && h.agentName === highlight.agentName
+    );
+
+    let updatedHighlights: NodeHighlight[];
+    if (existingIdx >= 0) {
+      // Update existing highlight with new timestamp
+      updatedHighlights = highlights.map((h, idx) =>
+        idx === existingIdx ? newHighlight : h
+      );
+    } else {
+      // Add new highlight
+      updatedHighlights = [...highlights, newHighlight];
+    }
+
+    set({ highlights: updatedHighlights });
+  },
+
+  removeHighlight: (node: string, agentName: string) => {
+    const { highlights } = get();
+    set({
+      highlights: highlights.filter((h) => !(h.node === node && h.agentName === agentName)),
+    });
+  },
+
+  clearExpiredHighlights: () => {
+    const { highlights } = get();
+    const now = Date.now();
+    set({
+      highlights: highlights.filter((h) => now - h.timestamp < HIGHLIGHT_FADE_MS),
+    });
+  },
+
+  clearAllHighlights: () => {
+    set({ highlights: [] });
   },
 }));
 

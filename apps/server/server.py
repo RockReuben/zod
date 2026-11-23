@@ -239,6 +239,23 @@ async def check_and_emit_diagram_events(
                 tool_output={},
             )
 
+        # Emit node_highlight event for the mapped node
+        # Use the first (most specific) match
+        best_match = results[0]
+        await emit_diagram_event(
+            session_id=session_id,
+            source_app=source_app,
+            agent_name=agent_name,
+            event_type="node_highlight",
+            tool_name=tool_name,
+            tool_input={
+                "file_path": file_path,
+                "diagram": best_match.diagram,
+                "node": best_match.node,
+            },
+            tool_output={},
+        )
+
 
 async def emit_diagram_event(
     session_id: str,

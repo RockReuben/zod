@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
 import { getApiBase, getToken } from '../config';
+import { NodeHighlight } from '../types';
 import './DiagramPanel.css';
 
 interface DiagramPanelProps {
   diagramName?: string;
   onDiagramError?: (error: string) => void;
+  highlights?: NodeHighlight[];
 }
 
-export function DiagramPanel({ diagramName = 'system-overview', onDiagramError }: DiagramPanelProps) {
+export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, highlights = [] }: DiagramPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +58,42 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError }
     return match ? match[1].trim() : null;
   };
 
+  const applyHighlights = useCallback((highlights: NodeHighlight[]) => {
+    if (!containerRef.current) return;
+
+    const svg = containerRef.current.querySelector('svg');
+    if (!svg) return;
+
+    // Remove existing highlight styles
+    const existingStyle = svg.querySelector('style[data-highlight-style]');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+
+    if (highlights.length === 0) return;
+
+    // Build CSS for highlights
+    const styleRules = highlights.map((h) => {
+      const nodeId = `node-${h.node}`;
+      return `
+        #${nodeId} {
+          stroke: ${h.color} !important;
+          stroke-width: 3px !important;
+          filter: drop-shadow(0 0 6px ${h.color}) !important;
+          transition: stroke 0.3s, filter 0.3s;
+        }
+        #${nodeId} * {
+          stroke: ${h.color} !important;
+        }
+      `;
+    }).join('\n');
+
+    const styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleElement.setAttribute('data-highlight-style', 'true');
+    styleElement.textContent = styleRules;
+    svg.insertBefore(styleElement, svg.firstChild);
+  }, []);
+
   const renderDiagram = useCallback(async () => {
     if (!containerRef.current || !diagramContent || renderAttempted.current) {
       return;
@@ -87,13 +125,15 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError }
 
       if (containerRef.current) {
         containerRef.current.innerHTML = svg;
+        // Apply highlights after rendering
+        applyHighlights(highlights);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to render diagram';
       setError(errorMessage);
       onDiagramError?.(errorMessage);
     }
-  }, [diagramContent, diagramName, onDiagramError]);
+  }, [diagramContent, diagramName, onDiagramError, highlights, applyHighlights]);
 
   useEffect(() => {
     fetchDiagram();
@@ -105,6 +145,13 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError }
       renderDiagram();
     }
   }, [isLoading, diagramContent, renderDiagram]);
+
+  // Re-apply highlights when they change (without re-rendering diagram)
+  useEffect(() => {
+    if (!isLoading && diagramContent && containerRef.current) {
+      applyHighlights(highlights);
+    }
+  }, [highlights, applyHighlights, isLoading, diagramContent]);
 
   if (isLoading) {
     return (

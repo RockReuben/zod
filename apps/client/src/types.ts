@@ -14,10 +14,19 @@ export interface HookEvent {
 }
 
 /** Diagram-related event types */
-export type DiagramEventType = 'unmapped_edit' | 'diagram_drift';
+export type DiagramEventType = 'unmapped_edit' | 'diagram_drift' | 'node_highlight';
 
 export function isDiagramEvent(eventType: string): eventType is DiagramEventType {
-  return eventType === 'unmapped_edit' || eventType === 'diagram_drift';
+  return eventType === 'unmapped_edit' || eventType === 'diagram_drift' || eventType === 'node_highlight';
+}
+
+/** Node highlight information for diagram visualization */
+export interface NodeHighlight {
+  node: string;
+  agentName: string;
+  diagram: string;
+  timestamp: number; // Unix timestamp in milliseconds
+  color: string;
 }
 
 /** Session lane for the timeline view */
