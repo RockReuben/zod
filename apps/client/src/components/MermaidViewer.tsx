@@ -150,7 +150,7 @@ export function MermaidViewer({
   }, []);
 
   const renderChart = async () => {
-    console.log('[MermaidViewer] renderChart called, chart length:', chart.length, 'container:', !!containerRef.current);
+    console.log('[MermaidViewer] renderChart called, chart length:', chart.length, 'container:', !!containerRef.current, 'containerRef.current:', containerRef.current);
     if (!containerRef.current || !chart.trim()) {
       console.log('[MermaidViewer] Early return - no container or empty chart');
       setIsLoading(false);
@@ -167,8 +167,14 @@ export function MermaidViewer({
       // Wait for fonts to be ready so Mermaid calculates text bounds correctly
       await document.fonts.ready;
 
-      // Ignore stale renders
-      if (!isMountedRef.current || currentRenderId !== renderIdRef.current) {
+      // Ignore stale renders - only check renderId (isMountedRef is unreliable with StrictMode)
+      if (currentRenderId !== renderIdRef.current) {
+        console.log('[MermaidViewer] Early return - stale render', { currentId: currentRenderId, refId: renderIdRef.current });
+        return;
+      }
+
+      if (!containerRef.current) {
+        console.log('[MermaidViewer] Early return - containerRef.current is null');
         return;
       }
 
@@ -176,11 +182,16 @@ export function MermaidViewer({
       const { svg } = await mermaid.render(`mermaid-${uniqueId}-${currentRenderId}`, chart);
       console.log('[MermaidViewer] mermaid.render returned, SVG length:', svg.length);
 
-      if (!isMountedRef.current || currentRenderId !== renderIdRef.current) {
+      // Ignore stale renders
+      if (currentRenderId !== renderIdRef.current) {
+        console.log('[MermaidViewer] Early return - stale render after render', { currentId: currentRenderId, refId: renderIdRef.current });
         return;
       }
 
-      if (!containerRef.current) return;
+      if (!containerRef.current) {
+        console.log('[MermaidViewer] Early return - containerRef.current is null');
+        return;
+      }
 
       // Inject SVG
       containerRef.current.innerHTML = svg;
@@ -207,14 +218,16 @@ export function MermaidViewer({
       onRendered?.();
       console.log('[MermaidViewer] renderChart completed successfully');
     } catch (err) {
-      if (!isMountedRef.current || currentRenderId !== renderIdRef.current) {
+      // Only handle error if this render is still current
+      if (currentRenderId !== renderIdRef.current) {
         return;
       }
       const errorMessage = err instanceof Error ? err.message : 'Failed to render diagram';
       setError(errorMessage);
       onError?.(errorMessage);
     } finally {
-      if (isMountedRef.current && currentRenderId === renderIdRef.current) {
+      // Only set loading false if this render is still current
+      if (currentRenderId === renderIdRef.current) {
         setIsLoading(false);
       }
     }
