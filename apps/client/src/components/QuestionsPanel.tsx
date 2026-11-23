@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { useEventsStore } from '../stores/events';
-import { Question } from '../types';
+/** Placeholder for P5.4 QuestionsPanel component.
+ * This is a minimal implementation to allow spec tests to import it.
+ * The actual implementation will be added when P5.4 is implemented.
+ */
+
+import { useEventsStore, Question } from '../stores/events';
+import { useState, useEffect } from 'react';
 import './QuestionsPanel.css';
 
-export const QuestionsPanel: React.FC = () => {
+export function QuestionsPanel() {
   const { questions, answerQuestion, startQuestionsPolling, stopQuestionsPolling } =
     useEventsStore();
 
@@ -94,4 +98,4 @@ export const QuestionsPanel: React.FC = () => {
       </div>
     </div>
   );
-};
+}
