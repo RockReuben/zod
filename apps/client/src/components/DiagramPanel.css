@@ -8,7 +8,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  position: relative; /* For absolute positioning of Zod badge */
+  position: relative;
 }
 
 .diagram-panel.loading {
@@ -72,37 +72,24 @@
   opacity: 0.9;
 }
 
-.diagram-container {
-  flex: 1;
-  overflow: auto;
-  padding: 16px;
-  background: var(--canvas-bg, #ffffff);
-}
-
-.diagram-container svg {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* Zod Badge - Floating over diagram (fixed to viewport since diagram is now full-screen background) */
+/* Zod Badge - Floating over diagram */
 .zod-badge {
-  position: fixed;
-  top: 32px;
+  position: absolute;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 20;
-  padding: 8px 20px;
+  z-index: 10;
+  padding: 6px 16px;
   background: linear-gradient(135deg, rgba(26, 115, 232, 0.9), rgba(26, 115, 232, 0.7));
   border-radius: 50px;
   color: white;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
   font-family: inherit;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   box-shadow:
-    0 4px 24px rgba(26, 115, 232, 0.4),
+    0 2px 12px rgba(26, 115, 232, 0.3),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -114,61 +101,60 @@
 @keyframes zodPulse {
   0%, 100% {
     box-shadow:
-      0 4px 24px rgba(26, 115, 232, 0.4),
+      0 2px 12px rgba(26, 115, 232, 0.3),
       0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   }
   50% {
     box-shadow:
-      0 6px 32px rgba(26, 115, 232, 0.6),
+      0 4px 20px rgba(26, 115, 232, 0.5),
       0 0 0 1px rgba(255, 255, 255, 0.2) inset;
   }
 }
 
+/* Mermaid viewer - full size in panel */
+.mermaid-viewer-wrapper {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* Remove pointer-events: none to allow interaction */
+}
+
+.mermaid-viewer-container {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.mermaid-viewer-container svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* Dark mode adjustments for mermaid output */
 @media (prefers-color-scheme: dark) {
-  .diagram-container {
+  .diagram-panel {
     background: #1e1e2e;
   }
 
-  .diagram-container svg {
+  /* Use invert + hue-rotate for dark mode, but only on the mermaid SVG */
+  .mermaid-viewer-container svg {
     filter: invert(1) hue-rotate(180deg);
   }
 
-  .diagram-container svg text,
-  .diagram-container svg foreignObject {
+  .mermaid-viewer-container svg text,
+  .mermaid-viewer-container svg foreignObject {
     filter: invert(1) hue-rotate(180deg);
   }
 }
 
 /* Light mode - ensure mermaid renders correctly */
 @media (prefers-color-scheme: light) {
-  .diagram-container {
+  .diagram-panel {
     background: #ffffff;
-  }
-}
-
-/* Mermaid background styles */
-.mermaid-viewer-wrapper {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* Ensure mermaid background svg is visible but subtle */
-.mermaid-viewer-wrapper svg {
-  opacity: 1;
-  filter: saturate(0.3);
-}
-
-@media (prefers-color-scheme: dark) {
-  .mermaid-viewer-wrapper svg {
-    filter: saturate(0.3) brightness(1.2);
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  .mermaid-viewer-wrapper svg {
-    filter: saturate(0.3) brightness(0.9);
   }
 }
