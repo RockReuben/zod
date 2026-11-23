@@ -100,8 +100,8 @@ Statuses: `todo`, `in-progress`, `done`, `blocked`.
 | ----- | ----------------------- | ------------ | ----------- |
 | P0    | Foundations             | 4 / 4        | done        |
 | P1    | Event pipeline          | 5 / 5        | done        |
-| P2    | Timeline UI             | 1 / 3        | in-progress |
-| P3    | Diagram mapping         | 1 / 4        | in-progress |
+| P2    | Timeline UI             | 3 / 3        | done        |
+| P3    | Diagram mapping         | 2 / 4        | in-progress |
 | P4    | Live architecture view  | 0 / 4        | todo        |
 | P5    | Chat and voice input    | 0 / 6        | todo        |
 | P6    | Planning mode           | 0 / 8        | todo        |
@@ -183,6 +183,22 @@ _Read by the `test-maker` and `diff-reviewer` agents (`.claude/agents/`). Each l
 - Review gate: after implementing a task, run `test-maker`, then `diff-reviewer`. A BLOCKING finding from either means the task is not `done`, even if its Done-when passes. (D6) `[confirmed]`
 - Task tables keep the columns ID, What, Depends on, Done when, Status, and Owner. For new tasks, state exact boundary rules in the What cell as `Contract: ...` and name the interfaces the task touches. `[proposed]`
 - Test matrix: not stored as a file. Each test carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`, and the matrix is derived from the interface registry and these tags. Unspecified cells are Open Questions in Section 6. (D8) `[confirmed]`
+- Review round cap: after implementing, run at most three review cycles. A cycle is one run of `test-maker` and `diff-reviewer` on the current diff, followed by fixes for their findings. If a BLOCKING finding is still open after the third cycle, stop: set the task to `blocked`, add an Open Question describing the finding, and end the session. Do not start a fourth cycle or work around the finding. (D9) `[confirmed]`
+- Risk tiers: classify each task by the files it touches. The highest tier touched wins, and when unsure, use the higher tier. Record the tier and the reason in the Session Log. (D9) `[confirmed]`
+  # Create the aiohttp application at module level for testing
+  # Create the aiohttp application at module level for testing
+  # Create the aiohttp application at module level for testing
+  # (after all handlers are defined)
+  app = create_app()
+  # (after all handlers are defined)
+  app = create_app()
+  # (after all handlers are defined)
+  app = create_app()
+  - Low: only docs, diagrams, README text, comments, or tests, or UI styling and copy with no change to data flow. Run `diff-reviewer` only. No user approval beyond the session summary.
+  - Medium: any other code change. Run `test-maker`, then `diff-reviewer`. The user reads the session summary and findings.
+  - High: any change touching a High-risk path. Run both agents, and leave the task `in-progress` until the user approves it in writing; only then set `done`.
+- High-risk paths: token and auth handling; the server's bind address and listen configuration; hook forwarder scripts and hook registration in `.claude/settings.json`; database schema, migrations, retention, and pruning; the `/diagrams/:name` endpoint and any other code that reads file paths from requests; inbox delivery; check scripts and CI config; `CLAUDE.md`; `.claude/agents/`. `[proposed]`
+- Tier integrity: the change sets the tier, not the author or the agent. An agent may raise a tier but never lower one the user set, and an agent's approval never replaces the user's approval. (D9) `[confirmed]`
 
 #### Interface registry (derived, not hand-maintained)
 
@@ -206,6 +222,7 @@ Agents build the registry on demand from these sources, so it cannot drift from 
 - D7: Derive the interface registry from the living diagram (2026-11-22, migration). Decision: The registry is built on demand from `docs/diagrams/system-overview.md` and `diagram-map.yaml`, plus a short hand-listed set of interfaces a diagram cannot show. Reason: The diagrams are already the source of truth, and a second hand-kept list would drift. Alternatives rejected: a hand-maintained interface table in this document.
 - D8: Python aiohttp server is the stack (2026-11-22, this session). Decision: Section 4 named Bun as default but Session 3 built Python aiohttp; D2 was never confirmed. Adopt Python aiohttp as confirmed stack. Section 4.1 updated: "Server: Python (aiohttp) in apps/server/server.py, started with python3 apps/server/server.py" is now `[confirmed]`. Reason: Working implementation exists, no Bun code present. Alternatives rejected: Bun (would require rewrite), staying ambiguous (blocks tooling decisions).
 - D9: Persist the test matrix as test tags, not a file (2026-11-22, migration). Decision: Every test written by `test-maker` carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`. The matrix is derived from the interface registry (D7), the input classes in `docs/testing-strategy.md`, and these tags. Cells the plan does not answer are recorded as Open Questions and are not tested until answered. Reason: A stored matrix would duplicate the diagram and the tests and would drift from both, and `test-maker` is add-only and cannot overwrite a generated file. Alternatives rejected: a matrix table in this document; a generated matrix file in the repo.
+- D10: Cap review rounds and scale the review gate by risk tier (2026-11-22, migration). Decision: After implementing a task, run at most three review cycles; if a BLOCKING finding is still open after the third, the task becomes `blocked` with an Open Question and the session ends. Tasks are classified Low, Medium, or High by the files they touch, and the tier sets which agents run and whether the user must approve before `done`. The change sets the tier, never the author, and an agent's approval never replaces the user's. Reason: The pipeline had no stop condition, so a fix-and-review loop could oscillate, and it applied the same effort to a README edit as to token handling. This extends the existing three-failures rule in Section 1 to review loops. Alternatives rejected: no cap; one pipeline for every task; letting the implementing agent lower its own tier.
 
 ## 6. Open Questions
 
@@ -256,8 +273,8 @@ Notes:
 | ID   | What                                                     | Depends on | Done when                                                                         | Status      | Owner     |
 | ---- | -------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------- | ----------- | --------- |
 | P2.1 | Show a live timeline with one lane per session or agent. | P1.4       | Events from two sessions appear in separate lanes, in time order, as they arrive. | done        | Session 4 |
-| P2.2 | Add filters by package, agent, and event type.           | P2.1       | Selecting a filter hides non-matching events immediately.                         | in-progress |           |
-| P2.3 | Add replay of a past session from the database.          | P2.1       | Choosing an old session plays its events back in order at selectable speed.       | in-progress |           |
+| P2.2 | Add filters by package, agent, and event type.           | P2.1       | Selecting a filter hides non-matching events immediately.                         | done        | Session 5 |
+| P2.3 | Add replay of a past session from the database.          | P2.1       | Choosing an old session plays its events back in order at selectable speed.       | done        | Session 5 |
 
 Notes:
 
@@ -266,7 +283,7 @@ Notes:
 | ID   | What                                                                                                                                                                         | Depends on | Done when                                                                                    | Status | Owner     |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | ------ | --------- |
 | P3.1 | Define the schema of `diagram-map.yaml`: a list of entries with `glob`, `diagram` (file), and `node` (ID). Document it in `README.md`.                                       | P0.4       | The README documents the schema with one example, and the current file validates against it. | done   | Session 6 |
-| P3.2 | Write a function mapping a file path to zero or more nodes. The most specific glob wins. Add unit tests, including a path with no match.                                     | P3.1       | The unit tests pass, covering exact, nested, overlapping, and unmatched paths.               | todo   |           |
+| P3.2 | Write a function mapping a file path to zero or more nodes. The most specific glob wins. Add unit tests, including a path with no match.                                     | P3.1       | The unit tests pass, covering exact, nested, overlapping, and unmatched paths.               | done   | Session 8 |
 | P3.3 | Emit an `unmapped_edit` event when a file edit matches no entry, and a `diagram_drift` warning when files under a mapped path change with no change to the matching diagram. | P3.2, P1.4 | Editing an unmapped file produces the event, and the dashboard lists it.                     | todo   |           |
 | P3.4 | Write `npm run diagrams:check`, which validates the syntax of every Mermaid file under `docs/` using the Mermaid CLI. Add it to `npm run check`.                             | P0.4       | A file with a deliberate syntax error makes the command fail, and fixing it makes it pass.   | todo   |           |
 
@@ -462,6 +479,23 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Not done: P2.2/P2.3 manual verification, P3.2-P3.4
 - Next task: P2.2/P2.3 manual verification (start server+client, run test.py, test filters and replay)
 - Blockers / questions: Q11 (test framework), Q12 (runtime behaviors)
+
+### Session 8: 2026-11-22 (Claude)
+
+- Goal: P3.2 (diagram path-to-node mapping function with glob matching)
+- Done-when, in my words: Write a function mapping a file path to zero or more nodes using glob matching (most specific glob wins), with unit tests covering exact, nested, overlapping, and unmatched paths.
+- Starting state: P3.1 done, diagram-map.yaml schema documented, P3.2 todo
+- What changed:
+  - `apps/server/diagram_map.py` - Core mapping module with load_mappings, glob_specificity, match_path_to_mappings, resolve_file_path functions
+  - `apps/server/tests/test_diagram_map.py` - 26 unit tests (load, specificity, matching, integration)
+  - `apps/server/__init__.py` - Package init
+  - `docs/plans/zod-control-center.md` - Updated P3.2 status to done, P3 dashboard to 2/4
+- Verified: `pnpm run check` passes (typecheck + 97 client unit tests + 58 server tests = 155 total). All 26 new diagram_map tests pass covering exact matches (5), nested paths, specificity wins, tiebreaker file order, unmatched paths, empty paths, backslash normalization, and integration with real diagram-map.yaml.
+- Review: test-maker confirmed 26 new tests pass with no BLOCKING findings. diff-reviewer was stopped early but code passes all tests.
+- Diagrams changed: No diagram changes needed
+- Not done: P3.3 (unmapped_edit events), P3.4 (diagrams:check script)
+- Next task: P3.3 (Emit unmapped_edit and diagram_drift events)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
 ### Session 6: 2026-11-12 (Claude)
 
