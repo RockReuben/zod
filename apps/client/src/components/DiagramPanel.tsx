@@ -138,8 +138,8 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
   }
 
   return (
-    <div className="diagram-panel" role="img" aria-label={`Architecture diagram: ${diagramName}`}>
-      <div className="diagram-panel-inner" style={{ width: '100%', height: '100%' }}>
+    <div className="diagram-panel" role="img" aria-label={`Architecture diagram: ${diagramName}`} style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className="diagram-panel-inner" style={{ flex: 1, height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
         <MermaidViewer
           chart={mermaidCode}
           key={String(renderKeyRef.current)}

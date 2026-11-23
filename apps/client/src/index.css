@@ -147,9 +147,11 @@ body {
 
 .main-content {
   flex: 1;
-  min-height: 300px;
+  min-height: 400px;
   padding: 16px;
-  overflow: auto;
+  overflow: hidden; /* Let DiagramPanel handle its own scrolling */
+  display: flex;
+  flex-direction: column;
 }
 
 .timeline-section {

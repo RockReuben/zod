@@ -197,6 +197,6 @@ describe('ChatBox', () => {
 
     expect(screen.getByText('Alt+M')).toBeInTheDocument();
     expect(screen.getByText('Alt+T')).toBeInTheDocument();
-    expect(screen.getByText('`')).toBeInTheDocument();
+    expect(screen.getByText('Esc')).toBeInTheDocument();
   });
 });

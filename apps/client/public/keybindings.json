@@ -2,18 +2,18 @@
   "shortcuts": {
     "focusChat": "Alt+M",
     "cycleChatTarget": "Alt+T",
-    "toggleChatPanel": "Backquote"
+    "toggleChatPanel": "Escape"
   },
   "platformOverrides": {
     "win32": {
       "focusChat": "Alt+M",
       "cycleChatTarget": "Alt+T",
-      "toggleChatPanel": "Backquote"
+      "toggleChatPanel": "Escape"
     },
     "linux": {
       "focusChat": "Alt+M",
       "cycleChatTarget": "Alt+T",
-      "toggleChatPanel": "Backquote"
+      "toggleChatPanel": "Escape"
     }
   }
 }

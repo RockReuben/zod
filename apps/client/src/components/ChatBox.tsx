@@ -278,7 +278,7 @@ export function ChatBox() {
       <div className="chat-shortcuts">
         <kbd className="shortcut-key">Alt+M</kbd> Focus chat
         <kbd className="shortcut-key">Alt+T</kbd> Cycle target
-        <kbd className="shortcut-key">`</kbd> Toggle panel
+        <kbd className="shortcut-key">Esc</kbd> Toggle panel
       </div>
     </div>
   );

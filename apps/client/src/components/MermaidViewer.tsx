@@ -85,8 +85,12 @@ export function MermaidViewer({
     svgEl.style.maxWidth = 'none';
     svgEl.style.width = '100%';
     svgEl.style.height = '100%';
-    // Ensure the SVG fills its container
+    // Ensure the SVG fills its container and is visible
     svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    // Force the SVG to be visible
+    svgEl.style.display = 'block';
+    svgEl.style.visibility = 'visible';
+    svgEl.style.opacity = '1';
 
     // Initialize pan/zoom
     const instance = svgPanZoom(svgEl, {
