@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "pnpm --filter zod-control-center-client typecheck && pnpm --filter zod-control-center-client test:unit && python -m pytest apps/server/tests/ -v",
+    "check": "pnpm --filter zod-control-center-client typecheck && pnpm --filter zod-control-center-client test:unit && python -m pytest apps/server/tests/ -v && python scripts/diagrams-check.py",
+    "diagrams:check": "python scripts/diagrams-check.py",
     "test:server": "python -m pytest apps/server/tests/ -v",
     "test:client:unit": "pnpm --filter zod-control-center-client test:unit",
     "test:client:e2e": "pnpm --filter zod-control-center-client test:e2e",
@@ -12,6 +13,7 @@
     "lint": "pnpm --filter zod-control-center-client lint"
   },
   "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^12.2.0",
     "@playwright/test": "^1.42.0",
     "eslint": "^8.56.0",
     "typescript": "^5.3.3",

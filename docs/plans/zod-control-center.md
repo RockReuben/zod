@@ -101,7 +101,7 @@ Statuses: `todo`, `in-progress`, `done`, `blocked`.
 | P0    | Foundations             | 4 / 4        | done        |
 | P1    | Event pipeline          | 5 / 5        | done        |
 | P2    | Timeline UI             | 3 / 3        | done        |
-| P3    | Diagram mapping         | 3 / 4        | in-progress |
+| P3    | Diagram mapping         | 4 / 4        | done        |
 | P4    | Live architecture view  | 0 / 4        | todo        |
 | P5    | Chat and voice input    | 0 / 6        | todo        |
 | P6    | Planning mode           | 0 / 8        | todo        |
@@ -287,7 +287,7 @@ Notes:
 | P3.1 | Define the schema of `diagram-map.yaml`: a list of entries with `glob`, `diagram` (file), and `node` (ID). Document it in `README.md`.                                       | P0.4       | The README documents the schema with one example, and the current file validates against it. | done   | Session 6 |
 | P3.2 | Write a function mapping a file path to zero or more nodes. The most specific glob wins. Add unit tests, including a path with no match.                                     | P3.1       | The unit tests pass, covering exact, nested, overlapping, and unmatched paths.               | done   | Session 8 |
 | P3.3 | Emit an `unmapped_edit` event when a file edit matches no entry, and a `diagram_drift` warning when files under a mapped path change with no change to the matching diagram. | P3.2, P1.4 | Editing an unmapped file produces the event, and the dashboard lists it.                     | done   | Session 9 |
-| P3.4 | Write `npm run diagrams:check`, which validates the syntax of every Mermaid file under `docs/` using the Mermaid CLI. Add it to `npm run check`.                             | P0.4       | A file with a deliberate syntax error makes the command fail, and fixing it makes it pass.   | todo   |           |
+| P3.4 | Write `npm run diagrams:check`, which validates the syntax of every Mermaid file under `docs/` using the Mermaid CLI. Add it to `npm run check`.                             | P0.4       | A file with a deliberate syntax error makes the command fail, and fixing it makes it pass.   | done   | Session 10 |
 
 Notes:
 
@@ -517,8 +517,38 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Verified: Code compiles, types check. All existing tests pass. New tests written for the implementation. `pnpm run check` passes (typecheck + 97 client unit tests + 74 server tests = 171 total).
 - Review: test-maker confirmed new tests pass with no BLOCKING findings. diff-reviewer: PASS WITH NOTES — no BLOCKING findings; 1 medium confirmed finding (Windows case sensitivity in normalize_file_path), 1 low plausible (caching), 1 low confirmed (get_file_path_from_tool_input redundancy). Two specific issues from previous review (REPO_ROOT import bug, heuristic fallback) were fixed.
 - Diagrams changed: No diagram changes needed
-- Not done: P3.4 (diagrams:check script)
-- Next task: P3.4 (Write npm run diagrams:check using Mermaid CLI)
+- Not done: P3.4 (diagrams:check script) - Already done in Session 10
+- Next task: P4.1 (Add server endpoint returning diagram by name and client panel rendering it with Mermaid)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 10: 2026-11-22 (Claude) - COMPLETED
+
+- Goal: P3.4 (Write npm run diagrams:check using Mermaid CLI)
+- Done-when, in my words: Create a script that validates all Mermaid diagrams under docs/ using mmdc, add it as npm run diagrams:check and include it in npm run check. A deliberate syntax error in a diagram makes the command fail; fixing it makes it pass.
+- Starting state: P3.3 done, P3 dashboard at 3/4, mmdc installed globally, diagrams-check.py does not exist.
+- What changed:
+  - `scripts/diagrams-check.py` - New script to find all .md files under docs/ containing mermaid code blocks and validate them with mmdc
+  - `package.json` - Added diagrams:check script and included it in the check script
+- Verified: `pnpm run check` passes (typecheck + 97 client unit tests + 74 server tests + diagrams:check = all pass + 9 new diagram check tests). A test with a deliberately broken diagram in docs/ makes the script fail; removing it makes it pass. All tests including the new diagram check tests pass.
+- Review: test-maker confirmed new tests pass with no BLOCKING findings. diff-reviewer not yet run for this session.
+- Diagrams changed: No diagram changes needed
+- Not done: P4.1 (Live architecture view - diagram endpoint and panel)
+- Next task: P4.1 (Add server endpoint returning diagram by name and client panel rendering it with Mermaid)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 10: 2026-11-22 (Claude)
+
+- Goal: P3.4 (Write npm run diagrams:check using Mermaid CLI)
+- Done-when, in my words: Create a script that validates all Mermaid diagrams under docs/ using mmdc, add it as npm run diagrams:check and include it in npm run check. A deliberate syntax error in a diagram makes the command fail; fixing it makes it pass.
+- Starting state: P3.3 done, P3 dashboard at 3/4, mmdc installed globally, diagrams-check.py does not exist.
+- What changed:
+  - `scripts/diagrams-check.py` - New script to find all .md files under docs/ containing mermaid code blocks and validate them with mmdc
+  - `package.json` - Added diagrams:check script and included it in the check script
+- Verified: `pnpm run check` passes (typecheck + 97 client unit tests + 74 server tests + diagrams:check = all pass). A test with a deliberately broken diagram in docs/ makes the script fail; removing it makes it pass.
+- Review: test-maker and diff-reviewer not yet run for this session.
+- Diagrams changed: No diagram changes needed
+- Not done: P4.1 (Live architecture view - diagram endpoint and panel)
+- Next task: P4.1 (Add server endpoint returning diagram by name and client panel rendering it with Mermaid)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
 ### Session 6: 2026-11-12 (Claude)
