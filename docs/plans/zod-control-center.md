@@ -96,7 +96,7 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 
 ## 3. Status dashboard
 
-Statuses: `todo`, `in-progress`, `done`, `blocked`.
+Statuses: `todo`, `in-progress`, `pending-review` (all phase tasks done; awaiting human phase sign-off), `done`, `blocked`.
 
 | Phase | Name                    | Done / Total | Status      |
 | ----- | ----------------------- | ------------ | ----------- |
@@ -109,6 +109,7 @@ Statuses: `todo`, `in-progress`, `done`, `blocked`.
 | P6    | Planning mode           | 0 / 8        | todo        |
 | P7    | Execution orchestration | 0 / 4        | todo        |
 | P8    | Hardening               | 0 / 4        | todo        |
+| P9    | Beautification          | 0 / 4        | todo        |
 
 ## 4. Project summary
 

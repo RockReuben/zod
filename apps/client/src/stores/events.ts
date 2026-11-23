@@ -128,7 +128,7 @@ const useEventsStore = create<EventsState>((set, get) => ({
   messages: new Map(),
   selectedTarget: 'lead',
   availableTargets: ['lead'],
-  chatPanelOpen: false,
+  chatPanelOpen: true, // Open by default
   messagePollingInterval: null,
 
   questions: [],

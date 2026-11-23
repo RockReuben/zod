@@ -160,21 +160,15 @@ body {
   flex-shrink: 0;
 }
 
-/* Chat panel at bottom */
+/* Chat panel container - now just a placeholder for layout flow */
 .chat-panel-container {
   position: relative;
   z-index: 10;
-  padding: 0 16px 16px;
-  background: var(--bg-primary);
+  height: 0; /* Chat panel is now fixed/floating, doesn't take layout space */
+  pointer-events: none;
 }
 
-/* Ensure toggle button is visible when panel is closed */
-.chat-panel-container .chat-panel-toggle {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-}
+/* Chat panel and toggle are now fixed position, managed by their own CSS */
 
 @media (max-width: 768px) {
   .app-layout {

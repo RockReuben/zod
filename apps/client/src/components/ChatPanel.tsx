@@ -38,7 +38,7 @@ export function ChatPanel() {
         ref={toggleButtonRef}
         className="chat-panel-toggle"
         onClick={toggleChatPanel}
-        aria-label="Open chat panel (Meta+J)"
+        aria-label="Open chat panel (Meta+/)"
         aria-expanded="false"
         type="button"
       >
@@ -59,7 +59,7 @@ export function ChatPanel() {
         <button
           className="chat-panel-toggle-btn"
           onClick={toggleChatPanel}
-          aria-label="Close chat panel (Meta+J)"
+          aria-label="Close chat panel (Meta+/)"
           type="button"
         >
           <span className="chat-toggle-icon">💬</span>
