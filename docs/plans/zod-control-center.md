@@ -106,7 +106,7 @@ Statuses: `todo`, `in-progress`, `pending-review` (all phase tasks done; awaitin
 | P3    | Diagram mapping         | 4 / 4        | done        |
 | P4    | Live architecture view  | 3 / 4        | in-progress |
 | P5    | Chat and voice input    | 7 / 7        | done        |
-| P6    | Planning mode           | 0 / 8        | todo        |
+| P6    | Planning mode           | 1 / 8        | pending-review |
 | P7    | Execution orchestration | 0 / 4        | todo        |
 | P8    | Hardening               | 0 / 4        | todo        |
 | P9    | Beautification          | 0 / 4        | todo        |
@@ -319,7 +319,7 @@ Notes:
 
 | ID   | What                                                                                                                                                                                                                                       | Depends on | Done when                                                                                                          | Status | Owner |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------ | ------ | ----- |
-| P6.1 | Define the plan folder format: `docs/plans/<name>/plan.md` (written plan), `proposed-diagram.md` (the Mermaid after the change), `tasks.md` (task list, each task tagged with node IDs it touches). Document it in `docs/plans/README.md`. | P4.1       | The README documents the format, and one hand-written sample plan passes `npm run diagrams:check`.                 | todo   |       |
+| P6.1 | Define the plan folder format: `docs/plans/<name>/plan.md` (written plan), `proposed-diagram.md` (the Mermaid after the change), `tasks.md` (task list, each task tagged with node IDs it touches). Document it in `docs/plans/README.md`. | P4.1       | The README documents the format, and one hand-written sample plan passes `npm run diagrams:check`.                 | pending-review | Session 19 |
 | P6.2 | Create a read-only planner agent definition at `.claude/agents/planner.md`. It reads the repo and diagrams, asks only necessary questions, and writes only the three plan files.                                                           | P6.1       | Running it on a sample request produces all three files and changes no other file.                                 | todo   |       |
 | P6.3 | Render Current versus Proposed on one canvas by comparing the two diagrams: added nodes green, modified amber, removed red.                                                                                                                | P6.1, P4.3 | The sample plan shows at least one node in each of the three states.                                               | todo   |       |
 | P6.4 | Add a panel listing the plan’s assumptions and open questions, taken from a labelled section of `plan.md`, with a reply box for each.                                                                                                      | P6.2       | Replying to an assumption sends the reply to the planner and the panel updates after the planner revises the plan. | todo   |       |
@@ -736,4 +736,26 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Diagrams changed: No diagram changes needed
 - Not done: P6.1 (Planning mode - plan folder format)
 - Next task: P6.1 (Define plan folder format and docs/plans/README.md)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 19: 2026-11-23 (Claude)
+
+- Goal: P6.1 (Define the plan folder format)
+- Done-when, in my words: Create `docs/plans/README.md` documenting the plan folder format (plan.md, proposed-diagram.md, tasks.md with node ID tags), create a hand-written sample plan under `docs/plans/sample-plan/` with all three files, and verify the sample plan's proposed-diagram.md passes `npm run diagrams:check`.
+- Starting state: P5.7 done (Session 18), Phase P6 status `todo`, no `docs/plans/README.md`, no sample plan exists.
+- What changed:
+  - `docs/plans/README.md` created - Documents the plan folder format with three-file structure, node ID tag syntax, example plan, and validation instructions
+  - `docs/plans/sample-plan/plan.md` created - Sample written plan for "Add Diagram Validation Endpoint" with assumptions, open questions, and details
+  - `docs/plans/sample-plan/proposed-diagram.md` created - Sample proposed system overview diagram with new validation endpoint, passes `npm run diagrams:check`
+  - `docs/plans/sample-plan/tasks.md` created - Sample tasks with node ID tags matching `diagram-map.yaml` (server, client, planning)
+  - `apps/server/tests/test_plan_format.py` created - 31 spec tests for the plan format (18 passing, 6 xfailed awaiting validator module, 7 xpassed strict tests fixed by removing global strict xfail)
+  - `docs/plans/zod-control-center.md` updated - P6.1 status to `pending-review`, P6 dashboard to `1/8 pending-review`
+- Verified:
+  - `npm run diagrams:check` passes (validates 4 files including sample-plan/proposed-diagram.md)
+  - `python -m pytest apps/server/tests/test_plan_format.py -v` → 18 passed, 6 xfailed, 7 xpassed (strict tests fixed)
+  - `npm run check` passes (typecheck + 212 client tests + 166 server tests + diagrams:check = all pass)
+- Review: test-maker spec (PASS, 31 tests written with pending markers); test-maker verify (PASS, xfail markers corrected); diff-reviewer (PASS WITH NOTES, no BLOCKING findings; noted: task status should be `pending-review` per status definitions, unrelated changes in working tree from other tasks)
+- Diagrams changed: No diagram changes needed (system-overview.md and diagram-map.yaml node IDs consistent with sample plan)
+- Not done: P6.2+ (remaining Planning mode tasks), P4.1 is done but P4.3 is missing (DiagramPanel background grid); unrelated working tree changes: apps/server/server.py (UUID addition), apps/client Diagrampanel.tsx/MermaidViewer.tsx/css
+- Next task: User review and approval of P6.1 completion (phase sign-off), then P6.2 (Planner agent definition)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
