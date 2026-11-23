@@ -13,6 +13,9 @@
   --text-muted: #64748b;
   --border-color: #e2e8f0;
   --accent: #3b82f6;
+  --panel-bg: #ffffff;
+  --canvas-bg: #ffffff;
+  --error-color: #ef4444;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,6 +27,9 @@
     --text-muted: #94a3b8;
     --border-color: #334155;
     --accent: #60a5fa;
+    --panel-bg: #1e293b;
+    --canvas-bg: #1e1e2e;
+    --error-color: #f87171;
   }
 }
 
@@ -65,5 +71,101 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* App Layout */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.diagram-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diagram-nav-item {
+  padding: 10px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.diagram-nav-item:hover {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.diagram-nav-item.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  font-weight: 500;
+}
+
+.main-content {
+  flex: 1;
+  min-height: 400px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.timeline-section {
+  min-height: 400px;
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    min-width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px;
+  }
+  .main-content {
+    padding: 12px;
+  }
+  .timeline-section {
+    padding: 0 12px 12px;
   }
 }

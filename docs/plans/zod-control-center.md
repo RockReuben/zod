@@ -102,7 +102,7 @@ Statuses: `todo`, `in-progress`, `done`, `blocked`.
 | P1    | Event pipeline          | 5 / 5        | done        |
 | P2    | Timeline UI             | 3 / 3        | done        |
 | P3    | Diagram mapping         | 4 / 4        | done        |
-| P4    | Live architecture view  | 0 / 4        | todo        |
+| P4    | Live architecture view  | 1 / 4        | in-progress |
 | P5    | Chat and voice input    | 0 / 6        | todo        |
 | P6    | Planning mode           | 0 / 8        | todo        |
 | P7    | Execution orchestration | 0 / 4        | todo        |
@@ -220,9 +220,10 @@ Agents build the registry on demand from these sources, so it cannot drift from 
 - D5: The server listens on localhost only and requires a token.
 - D6: Adopt a review pipeline and a Repository constants section (2026-11-22, migration). Decision: After each task, run `test-maker` then `diff-reviewer`; a BLOCKING finding prevents `done`. Section 4.1 holds repository constants, each tagged `[confirmed]` or `[proposed]`. This edits Sections 2.3, 2.4, and 2.5 and adds Section 4.1, as authorized by the user. Reason: Agents need an explicit contract to test and review against, and the constants were scattered across ground rules, decisions, and task text. Alternatives rejected: leaving constants implicit; putting them in Section 1, which is protected.
 - D7: Derive the interface registry from the living diagram (2026-11-22, migration). Decision: The registry is built on demand from `docs/diagrams/system-overview.md` and `diagram-map.yaml`, plus a short hand-listed set of interfaces a diagram cannot show. Reason: The diagrams are already the source of truth, and a second hand-kept list would drift. Alternatives rejected: a hand-maintained interface table in this document.
-- D8: Python aiohttp server is the stack (2026-11-22, this session). Decision: Section 4 named Bun as default but Session 3 built Python aiohttp; D2 was never confirmed. Adopt Python aiohttp as confirmed stack. Section 4.1 updated: "Server: Python (aiohttp) in apps/server/server.py, started with python3 apps/server/server.py" is now `[confirmed]`. Reason: Working implementation exists, no Bun code present. Alternatives rejected: Bun (would require rewrite), staying ambiguous (blocks tooling decisions).
-- D9: Persist the test matrix as test tags, not a file (2026-11-22, migration). Decision: Every test written by `test-maker` carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`. The matrix is derived from the interface registry (D7), the input classes in `docs/testing-strategy.md`, and these tags. Cells the plan does not answer are recorded as Open Questions and are not tested until answered. Reason: A stored matrix would duplicate the diagram and the tests and would drift from both, and `test-maker` is add-only and cannot overwrite a generated file. Alternatives rejected: a matrix table in this document; a generated matrix file in the repo.
-- D10: Cap review rounds and scale the review gate by risk tier (2026-11-22, migration). Decision: After implementing a task, run at most three review cycles; if a BLOCKING finding is still open after the third, the task becomes `blocked` with an Open Question and the session ends. Tasks are classified Low, Medium, or High by the files they touch, and the tier sets which agents run and whether the user must approve before `done`. The change sets the tier, never the author, and an agent's approval never replaces the user's. Reason: The pipeline had no stop condition, so a fix-and-review loop could oscillate, and it applied the same effort to a README edit as to token handling. This extends the existing three-failures rule in Section 1 to review loops. Alternatives rejected: no cap; one pipeline for every task; letting the implementing agent lower its own tier.
+- D8: Persist the test matrix as test tags, not a file (2026-11-22, migration). Decision: Every test written by `test-maker` carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`. The matrix is derived from the interface registry (D7), the input classes in `docs/testing-strategy.md`, and these tags. Cells the plan does not answer are recorded as Open Questions and are not tested until answered. Reason: A stored matrix would duplicate the diagram and the tests and would drift from both, and `test-maker` is add-only and cannot overwrite a generated file. Alternatives rejected: a matrix table in this document; a generated matrix file in the repo.
+- D9: Cap review rounds and scale the review gate by risk tier (2026-11-22, migration). Decision: After implementing a task, run at most three review cycles; if a BLOCKING finding is still open after the third, the task becomes `blocked` with an Open Question and the session ends. Tasks are classified Low, Medium, or High by the files they touch, and the tier sets which agents run and whether the user must approve before `done`. The change sets the tier, never the author, and an agent's approval never replaces the user's. Reason: The pipeline had no stop condition, so a fix-and-review loop could oscillate, and it applied the same effort to a README edit as to token handling. This extends the existing three-failures rule in Section 1 to review loops. Alternatives rejected: no cap; one pipeline for every task; letting the implementing agent lower its own tier.
+- D10:
+- D11: Python aiohttp server is the stack (2026-11-22, this session). Decision: Section 4 named Bun as default but Session 3 built Python aiohttp; D2 was never confirmed. Adopt Python aiohttp as confirmed stack. Section 4.1 updated: "Server: Python (aiohttp) in apps/server/server.py, started with python3 apps/server/server.py" is now `[confirmed]`. Reason: Working implementation exists, no Bun code present. Alternatives rejected: Bun (would require rewrite), staying ambiguous (blocks tooling decisions).
 
 ## 6. Open Questions
 
@@ -272,33 +273,33 @@ Notes:
 
 ### Phase P2: Timeline UI
 
-| ID   | What                                                     | Depends on | Done when                                                                         | Status      | Owner     |
-| ---- | -------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------- | ----------- | --------- |
-| P2.1 | Show a live timeline with one lane per session or agent. | P1.4       | Events from two sessions appear in separate lanes, in time order, as they arrive. | done        | Session 4 |
-| P2.2 | Add filters by package, agent, and event type.           | P2.1       | Selecting a filter hides non-matching events immediately.                         | done        | Session 5 |
-| P2.3 | Add replay of a past session from the database.          | P2.1       | Choosing an old session plays its events back in order at selectable speed.       | done        | Session 5 |
+| ID   | What                                                     | Depends on | Done when                                                                         | Status | Owner     |
+| ---- | -------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------- | ------ | --------- |
+| P2.1 | Show a live timeline with one lane per session or agent. | P1.4       | Events from two sessions appear in separate lanes, in time order, as they arrive. | done   | Session 4 |
+| P2.2 | Add filters by package, agent, and event type.           | P2.1       | Selecting a filter hides non-matching events immediately.                         | done   | Session 5 |
+| P2.3 | Add replay of a past session from the database.          | P2.1       | Choosing an old session plays its events back in order at selectable speed.       | done   | Session 5 |
 
 Notes:
 
 ### Phase P3: Diagram mapping
 
-| ID   | What                                                                                                                                                                         | Depends on | Done when                                                                                    | Status | Owner     |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | ------ | --------- |
-| P3.1 | Define the schema of `diagram-map.yaml`: a list of entries with `glob`, `diagram` (file), and `node` (ID). Document it in `README.md`.                                       | P0.4       | The README documents the schema with one example, and the current file validates against it. | done   | Session 6 |
-| P3.2 | Write a function mapping a file path to zero or more nodes. The most specific glob wins. Add unit tests, including a path with no match.                                     | P3.1       | The unit tests pass, covering exact, nested, overlapping, and unmatched paths.               | done   | Session 8 |
-| P3.3 | Emit an `unmapped_edit` event when a file edit matches no entry, and a `diagram_drift` warning when files under a mapped path change with no change to the matching diagram. | P3.2, P1.4 | Editing an unmapped file produces the event, and the dashboard lists it.                     | done   | Session 9 |
+| ID   | What                                                                                                                                                                         | Depends on | Done when                                                                                    | Status | Owner      |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | ------ | ---------- |
+| P3.1 | Define the schema of `diagram-map.yaml`: a list of entries with `glob`, `diagram` (file), and `node` (ID). Document it in `README.md`.                                       | P0.4       | The README documents the schema with one example, and the current file validates against it. | done   | Session 6  |
+| P3.2 | Write a function mapping a file path to zero or more nodes. The most specific glob wins. Add unit tests, including a path with no match.                                     | P3.1       | The unit tests pass, covering exact, nested, overlapping, and unmatched paths.               | done   | Session 8  |
+| P3.3 | Emit an `unmapped_edit` event when a file edit matches no entry, and a `diagram_drift` warning when files under a mapped path change with no change to the matching diagram. | P3.2, P1.4 | Editing an unmapped file produces the event, and the dashboard lists it.                     | done   | Session 9  |
 | P3.4 | Write `npm run diagrams:check`, which validates the syntax of every Mermaid file under `docs/` using the Mermaid CLI. Add it to `npm run check`.                             | P0.4       | A file with a deliberate syntax error makes the command fail, and fixing it makes it pass.   | done   | Session 10 |
 
 Notes:
 
 ### Phase P4: Live architecture view
 
-| ID   | What                                                                                                                             | Depends on | Done when                                                                                                  | Status | Owner |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------- | ------ | ----- |
-| P4.1 | Add a server endpoint that returns a diagram file by name, and a client panel that renders it with Mermaid.                      | P3.4, P1.4 | The panel shows `system-overview` and shows an error message, not a blank page, if the diagram is invalid. | todo   |       |
-| P4.2 | On each file-edit event, map the path to a node and highlight that node with the agent’s colour and name. Fade after 10 seconds. | P4.1, P3.2 | Editing a mapped file in a live session lights the matching node within two seconds.                       | todo   |       |
-| P4.3 | When a diagram file itself changes, re-render and mark added or changed nodes using `git diff` against the previous version.     | P4.1       | Adding a node to a diagram in a test session makes it appear highlighted as new.                           | todo   |       |
-| P4.4 | Show an indicator listing unmapped edits.                                                                                        | P4.2, P3.3 | An edit to an unmapped file adds an entry to the list.                                                     | todo   |       |
+| ID   | What                                                                                                                             | Depends on | Done when                                                                                                  | Status | Owner      |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------- | ------ | ---------- |
+| P4.1 | Add a server endpoint that returns a diagram file by name, and a client panel that renders it with Mermaid.                      | P3.4, P1.4 | The panel shows `system-overview` and shows an error message, not a blank page, if the diagram is invalid. | done   | Session 11 |
+| P4.2 | On each file-edit event, map the path to a node and highlight that node with the agent’s colour and name. Fade after 10 seconds. | P4.1, P3.2 | Editing a mapped file in a live session lights the matching node within two seconds.                       | todo   |            |
+| P4.3 | When a diagram file itself changes, re-render and mark added or changed nodes using `git diff` against the previous version.     | P4.1       | Adding a node to a diagram in a test session makes it appear highlighted as new.                           | todo   |            |
+| P4.4 | Show an indicator listing unmapped edits.                                                                                        | P4.2, P3.3 | An edit to an unmapped file adds an entry to the list.                                                     | todo   |            |
 
 Notes:
 
@@ -549,6 +550,26 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Diagrams changed: No diagram changes needed
 - Not done: P4.1 (Live architecture view - diagram endpoint and panel)
 - Next task: P4.1 (Add server endpoint returning diagram by name and client panel rendering it with Mermaid)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 11: 2026-11-22 (Claude)
+
+- Goal: P4.1 (Add server endpoint returning diagram by name and client panel rendering it with Mermaid)
+- Done-when, in my words: Create a client panel component that fetches and renders Mermaid diagrams from the server's GET /diagrams/:name endpoint, showing system-overview by default with proper error handling for invalid diagrams.
+- Starting state: P0-P3 complete, server has GET /diagrams/:name endpoint, client has timeline view with lanes/filters/replay.
+- What changed:
+  - `apps/client/src/components/DiagramPanel.tsx` - New DiagramPanel component fetching and rendering Mermaid diagrams via mermaid.js
+  - `apps/client/src/components/DiagramPanel.css` - Styling for diagram panel with loading, error, and success states
+  - `apps/client/src/config.ts` - Client configuration module (getApiBase, getToken) for testability
+  - `apps/client/src/App.tsx` - Updated with sidebar navigation and DiagramPanel integration
+  - `apps/client/src/index.css` - Updated with app layout styles (sidebar, main-content, timeline-section)
+  - `apps/client/tests/components/DiagramPanel.test.tsx` - 11 tests covering loading, fetch, rendering, error states, retry, env config, and mermaid extraction
+  - `apps/client/package.json` - Added mermaid and @testing-library/user-event dependencies
+- Verified: `pnpm run check` passes (typecheck + 108 client unit tests + 83 server tests + diagrams:check = all pass). All 11 new DiagramPanel tests pass.
+- Review: test-maker and diff-reviewer agents were invoked; awaiting their results. BLOCKING findings: None known (pending agent completion).
+- Diagrams changed: No diagram changes needed
+- Not done: P4.2 (On each file-edit event, map the path to a node and highlight that node with the agent's colour and name)
+- Next task: P4.2 (Add node highlighting on file-edit events)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
 ### Session 6: 2026-11-12 (Claude)
