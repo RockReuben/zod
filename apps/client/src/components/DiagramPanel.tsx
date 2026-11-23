@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import mermaid from 'mermaid';
 import { getApiBase, getToken } from '../config';
 import { NodeHighlight } from '../types';
+import { MermaidViewer } from './MermaidViewer';
 import './DiagramPanel.css';
 
 interface DiagramPanelProps {
@@ -11,11 +11,10 @@ interface DiagramPanelProps {
 }
 
 export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, highlights = [] }: DiagramPanelProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [diagramContent, setDiagramContent] = useState<string>('');
-  const renderAttempted = useRef(false);
+  const [mermaidCode, setMermaidCode] = useState<string>('');
+  const renderKeyRef = useRef(0);
 
   const apiBase = getApiBase();
   const token = getToken();
@@ -41,7 +40,11 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
       }
 
       const content = await response.text();
-      setDiagramContent(content);
+      const code = extractMermaidCode(content);
+      if (!code) {
+        throw new Error('No mermaid diagram found in file');
+      }
+      setMermaidCode(code);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
@@ -58,14 +61,11 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
     return match ? match[1].trim() : null;
   };
 
-  const applyHighlights = useCallback((highlights: NodeHighlight[]) => {
-    if (!containerRef.current) return;
-
-    const svg = containerRef.current.querySelector('svg');
-    if (!svg) return;
+  const applyHighlights = useCallback((svgEl: SVGSVGElement | null, highlights: NodeHighlight[]) => {
+    if (!svgEl) return;
 
     // Remove existing highlight styles
-    const existingStyle = svg.querySelector('style[data-highlight-style]');
+    const existingStyle = svgEl.querySelector('style[data-highlight-style]');
     if (existingStyle) {
       existingStyle.remove();
     }
@@ -91,74 +91,26 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
     const styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
     styleElement.setAttribute('data-highlight-style', 'true');
     styleElement.textContent = styleRules;
-    svg.insertBefore(styleElement, svg.firstChild);
+    svgEl.insertBefore(styleElement, svgEl.firstChild);
   }, []);
 
-  // Expose applyHighlights for parent to call if needed
+  // Re-render diagram when highlights change (to apply new highlights)
+  const handleRendered = useCallback(() => {
+    // Find the SVG element rendered by MermaidViewer
+    const viewerContainer = document.querySelector('.mermaid-viewer-container');
+    if (viewerContainer) {
+      const svgEl = viewerContainer.querySelector('svg');
+      applyHighlights(svgEl, highlights);
+    }
+  }, [highlights, applyHighlights]);
+
   useEffect(() => {
-    if (!isLoading && diagramContent && containerRef.current) {
-      applyHighlights(highlights);
-    }
-  }, [highlights, applyHighlights, isLoading, diagramContent]);
-
-  const renderDiagram = useCallback(async () => {
-    if (!containerRef.current || !diagramContent || renderAttempted.current) {
-      return;
-    }
-    renderAttempted.current = true;
-
-    const mermaidCode = extractMermaidCode(diagramContent);
-    if (!mermaidCode) {
-      setError('No mermaid diagram found in file');
-      onDiagramError?.('No mermaid diagram found in file');
-      return;
-    }
-
-    try {
-      // Initialize mermaid with config
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: 'default',
-        securityLevel: 'loose',
-        flowchart: {
-          useMaxWidth: true,
-          htmlLabels: true,
-          curve: 'basis',
-        },
-      });
-
-      // Render the diagram
-      const { svg } = await mermaid.render(`diagram-${diagramName}`, mermaidCode);
-
-      if (containerRef.current) {
-        containerRef.current.innerHTML = svg;
-        // Apply highlights after rendering
-        applyHighlights(highlights);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to render diagram';
-      setError(errorMessage);
-      onDiagramError?.(errorMessage);
-    }
-  }, [diagramContent, diagramName, onDiagramError, applyHighlights]);
+    handleRendered();
+  }, [highlights, handleRendered]);
 
   useEffect(() => {
     fetchDiagram();
   }, [fetchDiagram]);
-
-  useEffect(() => {
-    if (!isLoading && diagramContent) {
-      renderAttempted.current = false;
-      renderDiagram();
-    }
-  }, [isLoading, diagramContent, renderDiagram]);
-
-  // Re-apply highlights when they change (without re-rendering diagram)
-  useEffect(() => {
-    if (!isLoading && diagramContent && containerRef.current) {
-      applyHighlights(highlights);
-    }
-  }, [highlights, applyHighlights, isLoading, diagramContent]);
 
   if (isLoading) {
     return (
@@ -176,7 +128,7 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
         <h3>Failed to load diagram</h3>
         <p className="diagram-error-message">{error}</p>
         <button className="diagram-retry-btn" onClick={() => {
-          renderAttempted.current = false;
+          renderKeyRef.current += 1;
           fetchDiagram();
         }}>
           Retry
@@ -187,12 +139,17 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
 
   return (
     <div className="diagram-panel" role="img" aria-label={`Architecture diagram: ${diagramName}`}>
-      <div
-        ref={containerRef}
-        className="diagram-container"
-        data-testid="diagram-container"
-        data-diagram-name={diagramName}
-      />
+      <div className="diagram-panel-inner" style={{ width: '100%', height: '100%' }}>
+        <MermaidViewer
+          chart={mermaidCode}
+          key={String(renderKeyRef.current)}
+          onError={onDiagramError}
+          onRendered={handleRendered}
+          wrapperClass="mermaid-viewer-wrapper"
+          containerClass="mermaid-viewer-container"
+          testId="diagram-container"
+        />
+      </div>
     </div>
   );
 }
