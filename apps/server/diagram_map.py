@@ -17,6 +17,39 @@ import yaml
 REPO_ROOT = Path(__file__).parent.parent.parent
 
 
+def normalize_file_path(file_path: str, repo_root: Path | None = None) -> str | None:
+    """Normalize a file path to be relative to repo root.
+
+    Handles relative paths and absolute paths under repo root.
+    Resolves path traversal (..) and verifies the path stays within repo root.
+    Returns None if the path is outside repo root or traversal escapes.
+    """
+    if repo_root is None:
+        repo_root = REPO_ROOT
+
+    path = Path(file_path)
+    repo_root_resolved = repo_root.resolve()
+
+    # If relative, resolve against repo_root and verify it stays within
+    if not path.is_absolute():
+        resolved = (repo_root_resolved / path).resolve()
+        try:
+            relative = resolved.relative_to(repo_root_resolved)
+            return str(relative).replace("\\", "/")
+        except ValueError:
+            # Traversal escaped repo root (e.g., apps/server/../../../etc/passwd)
+            return None
+
+    # If absolute, resolve and verify it's under repo_root
+    try:
+        resolved = path.resolve()
+        relative = resolved.relative_to(repo_root_resolved)
+        return str(relative).replace("\\", "/")
+    except ValueError:
+        # Path is not under repo root
+        return None
+
+
 class DiagramMapping(NamedTuple):
     """A single mapping entry from diagram-map.yaml."""
     glob: str

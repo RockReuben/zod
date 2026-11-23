@@ -26,6 +26,7 @@ from diagram_map import (
     check_diagram_drift,
     get_file_path_from_tool_input,
     REPO_ROOT,
+    normalize_file_path,
 )
 
 # Load .env file if it exists
@@ -231,7 +232,7 @@ async def check_and_emit_diagram_events(
 
     # Normalize path (hook payloads may have absolute paths)
     # We need relative path from repo root
-    file_path = normalize_file_path(file_path)
+    file_path = normalize_file_path(file_path, REPO_ROOT)
     if not file_path:
         return
 
@@ -342,27 +343,6 @@ async def emit_diagram_event(
         "transcript_path": None,
     }
     asyncio.create_task(broadcast_event(event_data))
-
-
-def normalize_file_path(file_path: str) -> str | None:
-    """Normalize a file path to be relative to repo root.
-
-    Handles relative paths (returns as-is) and absolute paths under repo root.
-    Returns None if the path is absolute but not under repo root.
-    """
-    path = Path(file_path)
-
-    # If it's already relative, return as-is (with normalized separators)
-    if not path.is_absolute():
-        return str(path).replace("\\", "/")
-
-    # Try to make it relative to repo root
-    try:
-        relative = path.relative_to(REPO_ROOT)
-        return str(relative).replace("\\", "/")
-    except ValueError:
-        # Path is not under repo root
-        return None
 
 
 async def handle_get_events(request):

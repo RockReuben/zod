@@ -296,7 +296,7 @@ Notes:
 ### Phase P4: Live architecture view
 
 | ID | What | Depends on | Done when | Status | Owner |
-| P4.2 | On each file-edit event, map the path to a node and highlight that node with the agent's colour and name. Fade after 10 seconds. | P4.1, P3.2 | Editing a mapped file in a live session lights the matching node within two seconds. | done | Session 11 |
+| P4.2 | On each file-edit event, map the path to a node and highlight that node with the agent's colour and name. Fade after 10 seconds. | P4.1, P3.2 | Editing a mapped file in a live session lights the matching node within two seconds. | done | Session 17 |
 | P4.4 | Show an indicator listing unmapped edits. | P4.2, P3.3 | An edit to an unmapped file adds an entry to the list. | done | Session 9 |
 
 Notes:
