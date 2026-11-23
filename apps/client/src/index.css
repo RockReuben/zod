@@ -147,17 +147,23 @@ body {
 
 .main-content {
   flex: 1;
-  min-height: 400px;
+  min-height: 300px;
   padding: 16px;
   overflow: auto;
 }
 
 .timeline-section {
-  min-height: 400px;
+  min-height: 300px;
   padding: 0 16px 16px;
   border-top: 1px solid var(--border-color);
   background: var(--bg-primary);
   flex-shrink: 0;
+}
+
+/* Chat panel at bottom */
+.chat-panel-container {
+  position: relative;
+  z-index: 10;
 }
 
 @media (max-width: 768px) {

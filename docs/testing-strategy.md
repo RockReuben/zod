@@ -1,6 +1,8 @@
 # Testing Strategy
 
-Playbook for the `test-maker` agent and for humans. Repository-agnostic: repo-specific constants (test commands, exposure posture, failure policy, caps) live in the repository plan, not here. Sections are meant to be read selectively: always read **Core rules**, **Robustness invariants**, and **Universal input classes**, then only the interface sections that match the change.
+> **Agent Loading Rule:** Read **Core rules**, **Robustness invariants**, and **Universal input classes** only. Then `Grep` for `^## ` and read **strictly** the interface sections matching the active work unit. Never load the full file.
+
+Repository-agnostic playbook for `test-maker`. Repo-specific constants live in `zod-control-center.md`. Use existing repo tools only; never add dependencies.
 
 Tool names are examples. Always use what the repo already has, in its idiom, and never add dependencies as part of writing tests. Equivalents by ecosystem: property testing (fast-check, Hypothesis, proptest, gopter/rapid), mutation testing (Stryker, mutmut, cargo-mutants), expected-failure markers (see Core rule 10).
 
@@ -34,20 +36,20 @@ When the plan is silent, these are still reasonable to assert without choosing a
 
 Apply the relevant ones to every entry point. Mark each cell: specified, invariant-only, unspecified, N/A, or already covered.
 
-| Class | Examples |
-|---|---|
-| Valid / typical | Smallest valid input, a representative one |
-| Boundary | 0, 1, max, max+1, exactly at a cap, negative, non-integer, `NaN`, `Infinity` |
-| Empty / missing | `undefined`/`null`/`None`, `""`, `[]`, `{}`, missing required field, missing optional field |
-| Wrong type | String where number expected, array vs object, number-like strings |
-| Malformed | Invalid JSON, truncated input, bad encoding, unexpected extra fields, special keys (`__proto__`) |
-| Oversized | Very large body, very long string, deeply nested structure, huge collection |
-| Hostile content | Control characters, unicode edge cases, path traversal strings, injection-shaped strings if the value reaches a shell/SQL/path/markup sink |
-| Duplicate / replay | Same event twice, same id twice, idempotency |
-| Out of order | Event B before A, update before create, stop before start |
-| Concurrent | Parallel calls, interleaved writes, re-entrancy |
-| Dependency down | Database unavailable or locked, peer service down, file missing or unreadable, slow dependency |
-| Lifecycle | Use before init, after close/shutdown, double close, restart |
+| Class              | Examples                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Valid / typical    | Smallest valid input, a representative one                                                                                                 |
+| Boundary           | 0, 1, max, max+1, exactly at a cap, negative, non-integer, `NaN`, `Infinity`                                                               |
+| Empty / missing    | `undefined`/`null`/`None`, `""`, `[]`, `{}`, missing required field, missing optional field                                                |
+| Wrong type         | String where number expected, array vs object, number-like strings                                                                         |
+| Malformed          | Invalid JSON, truncated input, bad encoding, unexpected extra fields, special keys (`__proto__`)                                           |
+| Oversized          | Very large body, very long string, deeply nested structure, huge collection                                                                |
+| Hostile content    | Control characters, unicode edge cases, path traversal strings, injection-shaped strings if the value reaches a shell/SQL/path/markup sink |
+| Duplicate / replay | Same event twice, same id twice, idempotency                                                                                               |
+| Out of order       | Event B before A, update before create, stop before start                                                                                  |
+| Concurrent         | Parallel calls, interleaved writes, re-entrancy                                                                                            |
+| Dependency down    | Database unavailable or locked, peer service down, file missing or unreadable, slow dependency                                             |
+| Lifecycle          | Use before init, after close/shutdown, double close, restart                                                                               |
 
 ## Prioritizing by risk
 
@@ -58,6 +60,7 @@ Score each entry point: **reachability** (external untrusted input > another pro
 **Suite:** table-driven example tests, plus property-based tests when the function has algebraic properties. If no property library is installed, write a seeded, deterministic randomized loop only if that is idiomatic here; otherwise list it under Backlog.
 
 **Probe:**
+
 - Every boundary of every numeric or size parameter, matching the exact wording of the requirement (for example "must be a positive integer" means test 0, -1, 1.5, `NaN`, and a valid value).
 - Properties: round-trip (parse then serialize), idempotence, monotonic ordering, "output is a subset or permutation of input", cap never exceeded.
 - Schema/validator boundaries (Zod, Pydantic, JSON Schema, serde, and similar): valid parses; each required field missing; wrong types; extra fields (strip or reject, per plan); throwing versus result-returning APIs; schema and static types staying in sync where both exist.
@@ -70,6 +73,7 @@ Score each entry point: **reachability** (external untrusted input > another pro
 **Suite:** black-box integration. Start the real server on an ephemeral port against real in-memory dependencies, drive it with a real client, and close it in teardown.
 
 **Probe:**
+
 - Each route times each method: allowed, disallowed, unknown path.
 - Request validation: missing, wrong-type, malformed body, wrong or missing content type, oversized body, empty body.
 - Response contract: status, content type, shape (validated against the schema if one exists), stable ordering.
@@ -87,6 +91,7 @@ Applies to anything that receives a structured payload from outside its process 
 **Suite:** contract tests through the real entry. For process-style handlers, spawn the program, pipe a fixture payload to stdin, and assert on exit code, output, and side effect (request received by a local fake server, file written). Keep one fixture per event type, based on real or documented payload shapes. Check the integration's documentation when unsure of a field, and do not invent fields.
 
 **Probe:**
+
 - One fixture per supported event type, plus an unknown or future event type (behavior per plan; at minimum no crash).
 - Malformed input: empty, invalid JSON, truncated, huge, non-UTF8, extra unknown fields, missing expected fields.
 - **Failure semantics:** what exit code or acknowledgement is returned on failure, and whether that can interfere with the host process or sender. Check the plan's failure policy (fail open or closed). If it is silent, raise an Open Question and assert the invariant that the handler finishes within a deadline.
@@ -102,6 +107,7 @@ Applies to anything that receives a structured payload from outside its process 
 **Suite:** integration against a real engine in a temp or in-memory instance, with schema and migrations applied by the real code path. No mocks of the driver.
 
 **Probe:**
+
 - CRUD against spec, including empty-store reads and ordering guarantees.
 - Constraints: unique, not-null, foreign keys; duplicate insert behavior per spec.
 - Caps and retention (for example "keep at most N, drop oldest"): exactly N, N+1, and bulk insert past N; verify which item is dropped.

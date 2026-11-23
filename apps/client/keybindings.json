@@ -1,0 +1,19 @@
+{
+  "shortcuts": {
+    "focusChat": "Meta+K",
+    "cycleChatTarget": "Meta+Shift+K",
+    "toggleChatPanel": "Meta+J"
+  },
+  "platformOverrides": {
+    "win32": {
+      "focusChat": "Control+K",
+      "cycleChatTarget": "Control+Shift+K",
+      "toggleChatPanel": "Control+J"
+    },
+    "linux": {
+      "focusChat": "Control+K",
+      "cycleChatTarget": "Control+Shift+K",
+      "toggleChatPanel": "Control+J"
+    }
+  }
+}

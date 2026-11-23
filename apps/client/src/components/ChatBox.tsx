@@ -1,0 +1,189 @@
+import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useEventsStore } from '../stores/events';
+import { TargetSelector } from './TargetSelector';
+import { InboxMessage } from '../types';
+import { useShortcut } from '../hooks/useKeybindings';
+import './ChatBox.css';
+
+export function ChatBox() {
+  const selectedTarget = useEventsStore((s) => s.selectedTarget);
+  const messagesMap = useEventsStore((s) => s.messages);
+  const messages = messagesMap.get(selectedTarget) || [];
+  const sendMessage = useEventsStore((s) => s.sendMessage);
+  const cycleTarget = useEventsStore((s) => s.cycleTarget);
+  const fetchMessages = useEventsStore((s) => s.fetchMessages);
+
+  const [inputValue, setInputValue] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showTargetHint, setShowTargetHint] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Fetch messages when target changes
+  useEffect(() => {
+    fetchMessages(selectedTarget);
+  }, [selectedTarget, fetchMessages]);
+
+  // Shortcut to cycle target
+  useShortcut('cycleChatTarget', () => {
+    cycleTarget();
+    setShowTargetHint(true);
+    setTimeout(() => setShowTargetHint(false), 1500);
+  });
+
+  // Shortcut to focus input
+  useShortcut('focusChat', () => {
+    inputRef.current?.focus();
+  });
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    const el = messagesEndRef.current;
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const text = inputValue.trim();
+    if (!text || isSending) return;
+
+    setIsSending(true);
+    setError(null);
+
+    try {
+      await sendMessage(selectedTarget, text);
+      setInputValue('');
+    } catch (e) {
+      setError('Failed to send message. Check connection and try again.');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit(event);
+    }
+  };
+
+  const handleCycleTarget = () => {
+    cycleTarget();
+    setShowTargetHint(true);
+    setTimeout(() => setShowTargetHint(false), 1500);
+  };
+
+  return (
+    <div className="chat-box">
+      {/* Header with target selector */}
+      <div className="chat-header">
+        <div className="chat-header-left">
+          <span className="chat-title">Messages</span>
+          <TargetSelector />
+        </div>
+        <div className="chat-header-right">
+          {showTargetHint && (
+            <span className="target-hint">Target: {selectedTarget}</span>
+          )}
+          <button
+            className="chat-cycle-btn"
+            onClick={handleCycleTarget}
+            title="Cycle target (Meta+Shift+K)"
+            aria-label="Cycle message target"
+            type="button"
+          >
+            ↻
+          </button>
+        </div>
+      </div>
+
+      {/* Error display */}
+      {error && (
+        <div className="chat-error" role="alert">
+          {error}
+          <button onClick={() => setError(null)} aria-label="Dismiss">×</button>
+        </div>
+      )}
+
+      {/* Message history */}
+      <div className="chat-messages" role="log" aria-live="polite" aria-label="Message history">
+        {messages.length === 0 ? (
+          <div className="chat-empty">
+            <p>No messages for <strong>{selectedTarget}</strong></p>
+            <p className="chat-empty-hint">Type a message below to start the conversation</p>
+          </div>
+        ) : (
+          messages.map((msg, idx) => (
+            <MessageItem
+              key={`${selectedTarget}-${msg.created_at}-${idx}`}
+              message={msg}
+              target={selectedTarget}
+            />
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input area */}
+      <form className="chat-input-form" onSubmit={handleSubmit}>
+        <textarea
+          ref={inputRef}
+          className="chat-input"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={`Message to ${selectedTarget}... (Enter to send, Shift+Enter for new line)`}
+          disabled={isSending}
+          rows={1}
+          style={{ height: 'auto', minHeight: '40px', maxHeight: '120px' }}
+          aria-label={`Message input for ${selectedTarget}`}
+        />
+        <button
+          className="chat-send-btn"
+          type="submit"
+          disabled={!inputValue.trim() || isSending}
+          aria-label="Send message"
+        >
+          {isSending ? '⏳' : '➤'}
+        </button>
+      </form>
+
+      {/* Shortcut hints */}
+      <div className="chat-shortcuts">
+        <kbd className="shortcut-key">⌘K</kbd> Focus chat
+        <kbd className="shortcut-key">⌘⇧K</kbd> Cycle target
+        <kbd className="shortcut-key">⌘J</kbd> Toggle panel
+      </div>
+    </div>
+  );
+}
+
+function MessageItem({ message, target }: { message: InboxMessage; target: string }) {
+  const time = new Date(message.created_at * 1000).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
+  const sessionLabel = message.session_id
+    ? ` (${message.session_id.slice(0, 8)})`
+    : '';
+
+  // Determine if this is an incoming message (has session_id) or sent by us
+  const isIncoming = !!message.session_id;
+
+  return (
+    <div className={`chat-message ${isIncoming ? 'incoming' : 'outgoing'}`}>
+      <div className="chat-message-header">
+        <span className="chat-message-target">
+          {isIncoming ? `📩 From ${target}` : `📤 To ${target}`}
+        </span>
+        <span className="chat-message-time">{time}{sessionLabel}</span>
+      </div>
+      <div className="chat-message-text">{message.text}</div>
+    </div>
+  );
+}

@@ -22,7 +22,7 @@ Follow the session protocol in `docs/plans/zod-control-center.md` Section 2.
 
 Tasks are planned and verified by two agents (definitions in `.claude/agents/`). Both read the Repository constants (Section 4.1) in `docs/plans/zod-control-center.md`, which also holds the risk tiers and the review round cap.
 
-- When you start planning a Medium or High task, start `test-maker` in `spec` mode in the background. Do not edit code until it returns. Commit its tests as `P#.#: spec tests (pending)`.
+- When you start planning a Medium-Boundary or High task, start `test-maker` in `spec` mode in the background. Do not edit code until it returns. Commit its tests as `P#.#: spec tests (pending)`.
 - After implementing, run `test-maker` in `verify` mode, then `diff-reviewer`.
 - Never change a spec test's assertions, delete one, or add a skip to it. Remove a `pending:<task id>` marker only when its test passes.
 - A BLOCKING finding, or any remaining `pending:<task id>` marker, means the task is not `done`, even if its Done-when check passes.

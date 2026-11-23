@@ -22,7 +22,7 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 2. Run `git status` and `git log -5`. Confirm you are on the plan branch or a task branch and that there are no unexplained uncommitted changes. If there are, note them in the Session Log and ask the user before continuing.
 3. Open Section 3 (Status dashboard) and Section 7 (Tasks). Find the **first** task whose status is `in-progress` or `todo` and whose dependencies are all `done`. That is your task for this session.
 4. Append a new entry to Section 9 (Session Log) using the template in 2.5. Fill in: session number, agent name, date, goal (task IDs), and starting state.
-5. Plan the task. At the same moment you start planning the implementation, start the `test-maker` agent in `spec` mode for this task, in the background (skip this for Low-risk tasks; see Section 4.1). Do not wait for it while you plan, and do not edit code until it has returned. When it returns: commit its new test files as `P#.#: spec tests (pending)`, record its Open Question candidates in Section 6, and stop and ask the user if any is marked `affects Done-when: yes`.
+5. Plan the task. At the same moment you start planning the implementation, start the `test-maker` agent in `spec` mode for this task, in the background (for Medium-Boundary and High tasks only; see Section 4.1). Do not wait for it while you plan, and do not edit code until it has returned. When it returns: commit its new test files as `P#.#: spec tests (pending)`, record its Open Question candidates in Section 6, and stop and ask the user if any is marked `affects Done-when: yes`.
 6. In Section 7, change your task’s status from `todo` to `in-progress` and write the session number in the Owner column.
 7. In the Session Log entry, restate the task’s Done-when check in one line, in your own words.
 8. Run the existing checks (tests, typecheck, lint) and record the baseline result in the log. If checks already fail, record that and do not try to fix unrelated failures.
@@ -104,8 +104,8 @@ Statuses: `todo`, `in-progress`, `done`, `blocked`.
 | P1    | Event pipeline          | 5 / 5        | done        |
 | P2    | Timeline UI             | 3 / 3        | done        |
 | P3    | Diagram mapping         | 4 / 4        | done        |
-| P4    | Live architecture view  | 1 / 4        | in-progress |
-| P5    | Chat and voice input    | 0 / 6        | todo        |
+| P4    | Live architecture view  | 3 / 4        | in-progress |
+| P5    | Chat and voice input    | 2 / 6        | in-progress |
 | P6    | Planning mode           | 0 / 8        | todo        |
 | P7    | Execution orchestration | 0 / 4        | todo        |
 | P8    | Hardening               | 0 / 4        | todo        |
@@ -182,24 +182,17 @@ _Read by the `test-maker` and `diff-reviewer` agents (`.claude/agents/`). Each l
 
 - Section 1 (ground rules) and Section 2 (session protocol) are authoritative for work order, commit messages (`P1.3: short description`, `docs: session N log`), which sections may be edited, and where Open Questions (Section 6) and Backlog (Section 8) entries go. `[confirmed]`
 - Living diagrams under `docs/diagrams/` stay in sync with the code per the Living Diagrams section of `CLAUDE.md` (when to update, smallest-edit rule, Mermaid conventions). `[confirmed]`
-- Review gate: for Medium and High tasks, `test-maker` runs twice, in `spec` mode when the task is planned (before any code is written) and in `verify` mode after implementing; `diff-reviewer` runs after implementing. A BLOCKING finding from any run means the task is not `done`, even if its Done-when passes. (D6, D10) `[confirmed]`
-- Spec kickoff: when you start planning a Medium or High task, start `test-maker` in `spec` mode in the background, at the same time as you plan. Do not edit code until it has returned. Commit its new test files as `P#.#: spec tests (pending)`. A question it marks `affects Done-when: yes` stops the task until the user answers (Section 1: if unsure, stop). (D10) `[confirmed]`
+- Review gate: `test-maker` runs in `spec` mode when planning Medium-Boundary/High tasks, and in `verify` mode after implementing all Medium/High tasks; `diff-reviewer` runs after implementing all tasks. A BLOCKING finding from any run means the task is not `done`, even if its Done-when passes. (D6, D10, D12) `[confirmed]`
+- Spec kickoff: when you start planning a Medium-Boundary or High task, start `test-maker` in `spec` mode in the background, at the same time as you plan. Do not edit code until it has returned. Commit its new test files as `P#.#: spec tests (pending)`. A question it marks `affects Done-when: yes` stops the task until the user answers (Section 1: if unsure, stop). (D10, D12) `[confirmed]
 - Pending markers: spec tests carry the reason `pending:<task id>`, using the framework's strict-flip expected-failure mechanism where one exists. Remove a marker only when its test passes. Never change a spec test's assertions, delete one, or add a skip to it; if one looks wrong, add an Open Question. A task is not `done` while any `pending:<its task id>` marker remains. `bug:<finding id>` marks a known defect against a confirmed requirement. (D10) `[confirmed]`
-- Test matrix: not stored as a file. Each test carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`, and the matrix is derived from the interface registry and these tags. Unspecified cells are Open Questions in Section 6. (D8) `[confirmed]`
-- Review round cap: after implementing, run at most three review cycles. A cycle is one run of `test-maker` in `verify` mode and `diff-reviewer` on the current diff, followed by fixes for their findings. Spec mode is not a cycle. If a BLOCKING finding is still open after the third cycle, stop: set the task to `blocked`, add an Open Question describing the finding, and end the session. Do not start a fourth cycle or work around the finding. (D9) `[confirmed]`
-- Risk tiers: classify each task by the files it touches. The highest tier touched wins, and when unsure, use the higher tier. Record the tier and the reason in the Session Log. (D9) `[confirmed]`
-  - Low: only docs, diagrams, README text, comments, or tests, or UI styling and copy with no change to data flow. Run `diff-reviewer` only (no spec mode). No user approval beyond the session summary.
-  - Medium: any other code change. Run `test-maker` in `spec` mode when planning and in `verify` mode after implementing, then `diff-reviewer`. The user reads the session summary and findings.
-  - High: any change touching a High-risk path. Same as Medium, and leave the task `in-progress` until the user approves it in writing; only then set `done`.
-- High-risk paths: token and auth handling; the server's bind address and listen configuration; hook forwarder scripts and hook registration in `.claude/settings.json`; database schema, migrations, retention, and pruning; the `/diagrams/:name` endpoint and any other code that reads file paths from requests; inbox delivery; check scripts and CI config; `CLAUDE.md`; `.claude/agents/`. `[proposed]`
-- Tier integrity: the change sets the tier, not the author or the agent. An agent may raise a tier but never lower one the user set, and an agent's approval never replaces the user's approval. (D9) `[confirmed]`
 - Task tables keep the columns ID, What, Depends on, Done when, Status, and Owner. For new tasks, state exact boundary rules in the What cell as `Contract: ...` and name the interfaces the task touches. `[proposed]`
 - Test matrix: not stored as a file. Each test carries a comment `matrix: <interface> | <input class> | <plan reference, or "invariant">`, and the matrix is derived from the interface registry and these tags. Unspecified cells are Open Questions in Section 6. (D8) `[confirmed]`
 - Review round cap: after implementing, run at most three review cycles. A cycle is one run of `test-maker` and `diff-reviewer` on the current diff, followed by fixes for their findings. If a BLOCKING finding is still open after the third cycle, stop: set the task to `blocked`, add an Open Question describing the finding, and end the session. Do not start a fourth cycle or work around the finding. (D9) `[confirmed]`
-- Risk tiers: classify each task by the files it touches. The highest tier touched wins, and when unsure, use the higher tier. Record the tier and the reason in the Session Log. (D9) `[confirmed]`
+- Risk tiers: classify each task by the files it touches. The highest tier touched wins, and when unsure, use the higher tier. Record the tier and the reason in the Session Log. (D9, D12) `[confirmed]`
   - Low: only docs, diagrams, README text, comments, or tests, or UI styling and copy with no change to data flow. Run `diff-reviewer` only. No user approval beyond the session summary.
-  - Medium: any other code change. Run `test-maker`, then `diff-reviewer`. The user reads the session summary and findings.
-  - High: any change touching a High-risk path. Run both agents, and leave the task `in-progress` until the user approves it in writing; only then set `done`.
+  - Medium-Internal (internal helpers/refactors touching no external interfaces or state schemas): implement -> `test-maker` (verify) -> `diff-reviewer`.
+  - Medium-Boundary (new endpoints, CLI/stdin handlers, DB/storage writes, state machines): `test-maker` (spec) -> implement -> `test-maker` (verify) -> `diff-reviewer`.
+  - High: any change touching a High-risk path. Same as Medium-Boundary, and leave the task `in-progress` until the user approves it in writing; only then set `done`.
 - High-risk paths: token and auth handling; the server's bind address and listen configuration; hook forwarder scripts and hook registration in `.claude/settings.json`; database schema, migrations, retention, and pruning; the `/diagrams/:name` endpoint and any other code that reads file paths from requests; inbox delivery; check scripts and CI config; `CLAUDE.md`; `.claude/agents/`. `[proposed]`
 - Tier integrity: the change sets the tier, not the author or the agent. An agent may raise a tier but never lower one the user set, and an agent's approval never replaces the user's approval. (D9) `[confirmed]`
 
@@ -227,6 +220,7 @@ Agents build the registry on demand from these sources, so it cannot drift from 
 - D9: Cap review rounds and scale the review gate by risk tier (2026-11-22, migration). Decision: After implementing a task, run at most three review cycles; if a BLOCKING finding is still open after the third, the task becomes `blocked` with an Open Question and the session ends. Tasks are classified Low, Medium, or High by the files they touch, and the tier sets which agents run and whether the user must approve before `done`. The change sets the tier, never the author, and an agent's approval never replaces the user's. Reason: The pipeline had no stop condition, so a fix-and-review loop could oscillate, and it applied the same effort to a README edit as to token handling. This extends the existing three-failures rule in Section 1 to review loops. Alternatives rejected: no cap; one pipeline for every task; letting the implementing agent lower its own tier.
 - D10: Run `test-maker` in `spec` mode when a task is planned (2026-11-22, migration). Decision: At the start of planning for a Medium or High task, `test-maker` runs in the background in `spec` mode and writes pending tests (reason `pending:<task id>`) from this document's contract alone, while the implementer plans. The implementer starts coding only after it returns, commits its tests, and answers or records its questions. Spec tests are never edited, only unmarked as they start to pass, and a task is not `done` while any `pending:` marker remains. `test-maker` then runs again in `verify` mode after implementing. Reason: Tests written from the contract before the code are independent of the implementation, and unspecified behavior surfaces as a question while it is cheap to answer, not after the code exists. The agent already derives expectations from the contract, so it does not need the code. Alternatives rejected: running `test-maker` only after implementation; letting the implementer write its own spec tests; waiting for the implementer's plan before starting the agent, which would couple the tests to the plan and delay both.
 - D11: Python aiohttp server is the stack (2026-11-22, this session). Decision: Section 4 named Bun as default but Session 3 built Python aiohttp; D2 was never confirmed. Adopt Python aiohttp as confirmed stack. Section 4.1 updated: "Server: Python (aiohttp) in apps/server/server.py, started with python3 apps/server/server.py" is now `[confirmed]`. Reason: Working implementation exists, no Bun code present. Alternatives rejected: Bun (would require rewrite), staying ambiguous (blocks tooling decisions).
+- D12: Extract shared contract discovery protocol and split Medium risk tier (2026-11-23, maintenance). Decision: Move Step 0 plan/test-rig discovery into `docs/repo-contract-protocol.md`, enforce selective section loading in `docs/testing-strategy.md`, and split `Medium` into `Medium-Internal` (skips `spec` mode) and `Medium-Boundary` (runs `spec` + `verify`). Keep existing `P#.#` commit format for repository consistency. Reason: Cuts subagent prompt overhead and avoids `spec`/mutation ceremony on internal UI/helper tasks while keeping full contract protection on external boundaries. Alternatives rejected: switching commit formats mid-repo; running `spec` mode on internal UI tweaks like P5.5.
 
 ## 6. Open Questions
 
@@ -297,22 +291,22 @@ Notes:
 
 ### Phase P4: Live architecture view
 
-| ID   | What                                                                                                                             | Depends on | Done when                                                                                                  | Status | Owner      |
-| P4.2 | On each file-edit event, map the path to a node and highlight that node with the agent's colour and name. Fade after 10 seconds. | P4.1, P3.2 | Editing a mapped file in a live session lights the matching node within two seconds.                       | done | Session 11 |
-| P4.4 | Show an indicator listing unmapped edits.                                                                                        | P4.2, P3.3 | An edit to an unmapped file adds an entry to the list.                                                     | todo   |            |
+| ID | What | Depends on | Done when | Status | Owner |
+| P4.2 | On each file-edit event, map the path to a node and highlight that node with the agent's colour and name. Fade after 10 seconds. | P4.1, P3.2 | Editing a mapped file in a live session lights the matching node within two seconds. | done | Session 11 |
+| P4.4 | Show an indicator listing unmapped edits. | P4.2, P3.3 | An edit to an unmapped file adds an entry to the list. | done | Session 9 |
 
 Notes:
 
 ### Phase P5: Chat and voice input
 
-| ID   | What                                                                                                                                                                                                        | Depends on | Done when                                                                                              | Status | Owner |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ | ------ | ----- |
-| P5.1 | Add an `inbox` table and `POST /messages` with fields `target` (agent, package, or `lead`) and `text`.                                                                                                      | P1.5       | Posting a message stores it and a read endpoint returns it for that target.                            | todo   |       |
-| P5.2 | Add a chat box to the UI with a target selector and a message history.                                                                                                                                      | P5.1       | Sending from the UI creates a stored message and shows it in history.                                  | todo   |       |
-| P5.3 | Write a stop-time hook that checks the inbox for the session’s agent and, if a message is waiting, returns it so the agent continues with it. Use the exact format found in Q2. Mark the message delivered. | P5.1, P0.3 | With a running agent that tries to stop, a waiting message is delivered once and the agent acts on it. | todo   |       |
-| P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer.                                                                                    | P5.2       | A question posted by a script appears in the UI, and the answer is retrievable by the asker.           | todo   |       |
-| P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box.                                                                                                            | P5.2       | Speaking a sentence puts its text in the box, which the user can edit before sending.                  | todo   |       |
-| P5.6 | Route messages with no target to the lead agent, and support `@name` addressing.                                                                                                                            | P5.2       | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox.    | todo   |       |
+| ID   | What                                                                                                                                                                                                        | Depends on | Done when                                                                                              | Status | Owner      |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ | ------ | ---------- |
+| P5.1 | Add an `inbox` table and `POST /messages` with fields `target` (agent, package, or `lead`) and `text`.                                                                                                      | P1.5       | Posting a message stores it and a read endpoint returns it for that target.                            | done   | Session 3  |
+| P5.2 | Add a chat box to the UI with a target selector and a message history.                                                                                                                                      | P5.1       | Sending from the UI creates a stored message and shows it in history.                                  | done   | Session 12 |
+| P5.3 | Write a stop-time hook that checks the inbox for the session’s agent and, if a message is waiting, returns it so the agent continues with it. Use the exact format found in Q2. Mark the message delivered. | P5.1, P0.3 | With a running agent that tries to stop, a waiting message is delivered once and the agent acts on it. | todo   |            |
+| P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer.                                                                                    | P5.2       | A question posted by a script appears in the UI, and the answer is retrievable by the asker.           | todo   |            |
+| P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box.                                                                                                            | P5.2       | Speaking a sentence puts its text in the box, which the user can edit before sending.                  | todo   |            |
+| P5.6 | Route messages with no target to the lead agent, and support `@name` addressing.                                                                                                                            | P5.2       | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox.    | todo   |            |
 
 Notes:
 
@@ -572,6 +566,31 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Diagrams changed: No diagram changes needed
 - Not done: P4.2 (On each file-edit event, map the path to a node and highlight that node with the agent's colour and name)
 - Next task: P4.2 (Add node highlighting on file-edit events)
+
+### Session 12: 2026-11-23 (Claude)
+
+- Goal: P5.2 (Add a chat box to the UI with a target selector and a message history)
+- Done-when, in my words: Build a client-side chat UI at the bottom of the dashboard (like VS Code terminal) with target selector dropdown, message history, input field, and keyboard shortcuts (Meta+K to focus, Meta+Shift+K to cycle targets, Meta+J to toggle panel). Server-side P5.1 already implemented.
+- Starting state: P5.1 server complete (POST /messages, GET /messages/:target), client has timeline view, diagram panel, and event store.
+- What changed:
+  - `apps/client/keybindings.json` - Keyboard shortcut configuration (Mac/Windows/Linux overrides)
+  - `apps/client/public/keybindings.json` - Copied to public for Vite serving
+  - `apps/client/src/hooks/useKeybindings.ts` - Hook for global keyboard shortcuts with platform-aware resolution
+  - `apps/client/src/types.ts` - Added InboxMessage type
+  - `apps/client/src/stores/events.ts` - Extended store with message state (messages Map, selectedTarget, availableTargets, chatPanelOpen) and actions (fetchMessages, sendMessage, setSelectedTarget, cycleTarget, toggleChatPanel, start/stopMessagePolling)
+  - `apps/client/src/components/TargetSelector.tsx` + `.css` - Target selector dropdown with lead/package/agent badges, keyboard navigation
+  - `apps/client/src/components/ChatBox.tsx` + `.css` - Main chat component with message history, input, send button, incoming/outgoing styling
+  - `apps/client/src/components/ChatPanel.tsx` + `.css` - Bottom panel wrapper with toggle button, resize handle, unread badge
+  - `apps/client/src/App.tsx` - Integrated ChatPanel at bottom of layout, initialized shortcuts
+  - `apps/client/src/index.css` - Added chat-panel-container styles
+  - `apps/client/tests/hooks/useKeybindings.test.ts` - Tests for shortcut resolution (skipped - requires fetch)
+  - `apps/client/tests/components/TargetSelector.test.tsx` - 6 tests for dropdown, selection, keyboard nav, badge types
+  - `apps/client/tests/components/ChatBox.test.tsx` - 9 tests for rendering, empty state, form submit, Enter key, Shift+Enter, disabled states, message styles, shortcuts
+  - `apps/client/tests/components/ChatPanel.test.tsx` - 7 tests for toggle button, open/close, resize handle, unread badge
+- Verified: `pnpm run check` passes (typecheck + 142 client unit tests + 16 skipped). All tests pass.
+- Diagrams changed: No diagram changes needed
+- Not done: P5.3 (Stop-time hook for inbox delivery), P5.4 (Agent questions), P5.5 (Voice input), P5.6 (Message routing)
+- Next task: P5.3 (Write a stop-time hook that checks the inbox for the session's agent)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
 ### Session 6: 2026-11-12 (Claude)

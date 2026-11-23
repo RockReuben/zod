@@ -1,0 +1,161 @@
+.target-selector {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.target-selector-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-secondary, #1e1e1e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  color: var(--text-primary, #e0e0e0);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 180px;
+  justify-content: space-between;
+}
+
+.target-selector-button:hover {
+  border-color: var(--accent-color, #1a73e8);
+  background: var(--bg-tertiary, #252525);
+}
+
+.target-selector-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-color, #1a73e8);
+  border-color: var(--accent-color, #1a73e8);
+}
+
+.target-selector-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.target-selector-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.target-selector-badge.lead {
+  background: var(--accent-color, #1a73e8);
+  color: white;
+}
+
+.target-selector-badge.package {
+  background: var(--success-color, #2e7d32);
+  color: white;
+}
+
+.target-selector-badge.agent {
+  background: var(--warning-color, #f57c00);
+  color: white;
+}
+
+.target-selector-arrow {
+  font-size: 10px;
+  color: var(--text-secondary, #888);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.target-selector-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg-secondary, #1e1e1e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  overflow: hidden;
+  animation: dropdownSlideIn 0.1s ease;
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.target-selector-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  border-bottom: 1px solid var(--border-color, #333);
+}
+
+.target-selector-option:last-child {
+  border-bottom: none;
+}
+
+.target-selector-option:hover,
+.target-selector-option:focus {
+  background: var(--bg-tertiary, #252525);
+  outline: none;
+}
+
+.target-selector-option.selected {
+  background: var(--accent-bg, rgba(26, 115, 232, 0.15));
+}
+
+.target-option-label {
+  font-size: 13px;
+  color: var(--text-primary, #e0e0e0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.target-option-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.target-option-badge.lead {
+  background: var(--accent-color, #1a73e8);
+  color: white;
+}
+
+.target-option-badge.package {
+  background: var(--success-color, #2e7d32);
+  color: white;
+}
+
+.target-option-badge.agent {
+  background: var(--warning-color, #f57c00);
+  color: white;
+}

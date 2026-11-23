@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { HookEvent, SessionLane, NodeHighlight } from '../types';
+import { HookEvent, SessionLane, NodeHighlight, InboxMessage } from '../types';
 import { getAgentColor } from '../utils/agentColors';
 
 const MAX_EVENTS = 1000;
@@ -35,6 +35,14 @@ interface EventsState {
   filters: FilterState;
   replay: ReplayState;
   highlights: NodeHighlight[];
+
+  // Message state
+  messages: Map<string, InboxMessage[]>;
+  selectedTarget: string;
+  availableTargets: string[];
+  chatPanelOpen: boolean;
+  messagePollingInterval: ReturnType<typeof setInterval> | null;
+
   addEvent: (event: HookEvent) => void;
   setFilter: (key: keyof FilterState, value: string) => void;
   resetFilters: () => void;
@@ -60,6 +68,18 @@ interface EventsState {
   removeHighlight: (node: string, agentName: string) => void;
   clearExpiredHighlights: () => void;
   clearAllHighlights: () => void;
+
+  // Message actions
+  fetchMessages: (target: string) => Promise<void>;
+  sendMessage: (target: string, text: string) => Promise<void>;
+  setSelectedTarget: (target: string) => void;
+  cycleTarget: () => void;
+  addMessage: (target: string, message: InboxMessage) => void;
+  updateAvailableTargets: () => void;
+  toggleChatPanel: () => void;
+  setChatPanelOpen: (open: boolean) => void;
+  startMessagePolling: (target: string) => void;
+  stopMessagePolling: () => void;
 }
 
 const initialFilters: FilterState = {
@@ -81,6 +101,11 @@ const useEventsStore = create<EventsState>((set, get) => ({
   filters: { ...initialFilters },
   replay: { ...initialReplay },
   highlights: [],
+  messages: new Map(),
+  selectedTarget: 'lead',
+  availableTargets: ['lead'],
+  chatPanelOpen: false,
+  messagePollingInterval: null,
 
   addEvent: (event: HookEvent) => {
     const { events, replay } = get();
@@ -279,6 +304,114 @@ const useEventsStore = create<EventsState>((set, get) => ({
 
   clearAllHighlights: () => {
     set({ highlights: [] });
+  },
+
+  // Message actions
+  fetchMessages: async (target: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/messages/${encodeURIComponent(target)}`, {
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      const data = await response.json();
+      const messages = data.messages || [];
+      set((state) => {
+        const newMessages = new Map(state.messages);
+        newMessages.set(target, messages.reverse()); // Server returns newest first, we want oldest first
+        return { messages: newMessages };
+      });
+    } catch (e) {
+      console.error('Failed to fetch messages:', e);
+    }
+  },
+
+  sendMessage: async (target: string, text: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ target, text }),
+      });
+      if (!response.ok) throw new Error('Failed to send message');
+      // Message will appear in next poll or we could optimistically add it
+      get().fetchMessages(target);
+    } catch (e) {
+      console.error('Failed to send message:', e);
+      throw e;
+    }
+  },
+
+  setSelectedTarget: (target: string) => {
+    set({ selectedTarget: target });
+    get().fetchMessages(target);
+    get().startMessagePolling(target);
+  },
+
+  cycleTarget: () => {
+    const { availableTargets, selectedTarget } = get();
+    const currentIndex = availableTargets.indexOf(selectedTarget);
+    const nextIndex = (currentIndex + 1) % availableTargets.length;
+    const nextTarget = availableTargets[nextIndex];
+    get().setSelectedTarget(nextTarget);
+  },
+
+  addMessage: (target: string, message: InboxMessage) => {
+    set((state) => {
+      const newMessages = new Map(state.messages);
+      const targetMessages = newMessages.get(target) || [];
+      newMessages.set(target, [...targetMessages, message]);
+      return { messages: newMessages };
+    });
+  },
+
+  updateAvailableTargets: () => {
+    const { events } = get();
+    const sourceApps = new Set<string>();
+    const agentNames = new Set<string>();
+
+    for (const event of events) {
+      if (event.source_app) sourceApps.add(event.source_app);
+      if (event.agent_name) agentNames.add(event.agent_name);
+    }
+
+    // Build targets: lead first, then packages (source_app), then agents
+    const targets = ['lead', ...Array.from(sourceApps).sort(), ...Array.from(agentNames).sort()];
+    set({ availableTargets: targets });
+  },
+
+  toggleChatPanel: () => {
+    set((state) => ({ chatPanelOpen: !state.chatPanelOpen }));
+  },
+
+  setChatPanelOpen: (open: boolean) => {
+    set({ chatPanelOpen: open });
+    if (!open) {
+      get().stopMessagePolling();
+    } else {
+      get().startMessagePolling(get().selectedTarget);
+    }
+  },
+
+  startMessagePolling: (target: string) => {
+    const { messagePollingInterval } = get();
+    if (messagePollingInterval) {
+      clearInterval(messagePollingInterval);
+    }
+    const interval = setInterval(() => {
+      get().fetchMessages(target);
+    }, 3000); // Poll every 3 seconds
+    set({ messagePollingInterval: interval });
+  },
+
+  stopMessagePolling: () => {
+    const { messagePollingInterval } = get();
+    if (messagePollingInterval) {
+      clearInterval(messagePollingInterval);
+      set({ messagePollingInterval: null });
+    }
   },
 }));
 

@@ -48,3 +48,10 @@ export interface SessionInfo {
   start_time: number;
   end_time: number;
 }
+
+/** Inbox message from server */
+export interface InboxMessage {
+  session_id: string | null;
+  text: string;
+  created_at: number;
+}
