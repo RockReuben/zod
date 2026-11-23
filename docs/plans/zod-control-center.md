@@ -105,7 +105,7 @@ Statuses: `todo`, `in-progress`, `done`, `blocked`.
 | P2    | Timeline UI             | 3 / 3        | done        |
 | P3    | Diagram mapping         | 4 / 4        | done        |
 | P4    | Live architecture view  | 3 / 4        | in-progress |
-| P5    | Chat and voice input    | 4 / 6        | in-progress |
+| P5    | Chat and voice input    | 5 / 6        | in-progress |
 | P6    | Planning mode           | 0 / 8        | todo        |
 | P7    | Execution orchestration | 0 / 4        | todo        |
 | P8    | Hardening               | 0 / 4        | todo        |
@@ -306,7 +306,7 @@ Notes:
 | P5.2 | Add a chat box to the UI with a target selector and a message history.                                                                                                                                      | P5.1       | Sending from the UI creates a stored message and shows it in history.                                  | done   | Session 12 |
 | P5.3 | Write a stop-time hook that checks the inbox for the session’s agent and, if a message is waiting, returns it so the agent continues with it. Use the exact format found in Q2. Mark the message delivered. | P5.1, P0.3 | With a running agent that tries to stop, a waiting message is delivered once and the agent acts on it. | done   | Session 13 |
 | P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer.                                                                                    | P5.2       | A question posted by a script appears in the UI, and the answer is retrievable by the asker.           | done   | Session 14 |
-| P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box.                                                                                                            | P5.2       | Speaking a sentence puts its text in the box, which the user can edit before sending.                  | todo   |            |
+| P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box.                                                                                                            | P5.2       | Speaking a sentence puts its text in the box, which the user can edit before sending.                  | done   | Session 15 |
 | P5.6 | Route messages with no target to the lead agent, and support `@name` addressing.                                                                                                                            | P5.2       | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox.    | todo   |            |
 
 Notes:
@@ -631,6 +631,24 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Diagrams changed: system-overview.md (updated for questions endpoints if needed)
 - Not done: P5.5 (Voice input), P5.6 (Message routing)
 - Next task: P5.5 (Add a microphone button using browser's built-in speech recognition)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 15: 2026-11-23 (Claude)
+
+- Goal: P5.5 (Add a microphone button using the browser's built-in speech recognition)
+- Done-when, in my words: Implement a microphone button in the chat input area that uses the browser's SpeechRecognition API to transcribe speech into the text input, allowing the user to edit before sending.
+- Starting state: P5.4 done, client has ChatBox with message history and input area. No voice input feature exists. Test-maker spec tests committed with it.fails markers.
+- What changed:
+  - `apps/client/src/components/ChatBox.tsx` - Added voice input state (isListening, speechError, isSpeechSupported), SpeechRecognition ref, start/stop/toggle functions, cleanup on unmount, keyboard activation (Enter/Space)
+  - `apps/client/src/components/ChatBox.css` - Added microphone button styles with listening state (pulse animation), error state, and speech error display
+  - `apps/client/src/types.ts` - Added comprehensive SpeechRecognition API type definitions (SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent, SpeechRecognitionResultList, SpeechRecognitionResult, SpeechRecognitionAlternative, SpeechGrammarList, SpeechGrammar) and Window interface extensions
+  - `apps/client/tsconfig.json` - Added types.ts to include for type checking
+  - `apps/client/tests/components/ChatBox.voice.test.tsx` - Updated from it.fails to it() for all 23 spec tests, fixed tests to properly simulate onstart/onend callbacks
+- Verified: `npm run check` passes (typecheck + 170 client unit tests + 130 server tests + diagrams:check = all pass). All 23 voice tests pass.
+- Review: test-maker verify mode confirmed all spec tests pass; diff-reviewer completed with no BLOCKING findings.
+- Diagrams changed: No diagram changes needed
+- Not done: P5.6 (Message routing)
+- Next task: P5.6 (Route messages with no target to lead agent, support @name addressing)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
 ### Session 6: 2026-11-12 (Claude)
