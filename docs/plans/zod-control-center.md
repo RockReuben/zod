@@ -225,6 +225,7 @@ Agents build the registry on demand from these sources, so it cannot drift from 
 - D12: Extract shared contract discovery protocol and split Medium risk tier (2026-11-23, maintenance). Decision: Move Step 0 plan/test-rig discovery into `docs/repo-contract-protocol.md`, enforce selective section loading in `docs/testing-strategy.md`, and split `Medium` into `Medium-Internal` (skips `spec` mode) and `Medium-Boundary` (runs `spec` + `verify`). Keep existing `P#.#` commit format for repository consistency. Reason: Cuts subagent prompt overhead and avoids `spec`/mutation ceremony on internal UI/helper tasks while keeping full contract protection on external boundaries. Alternatives rejected: switching commit formats mid-repo; running `spec` mode on internal UI tweaks like P5.5.
 - D13: Require diff-reviewer completion and user summary approval before committing (2026-11-23, maintenance). Decision: Update Sections 2.2, 2.3, and 4.1 so agents wait for `diff-reviewer` to complete, present the session summary to the user, and wait for confirmation before committing session changes. Reason: Prevents unreviewed or unwanted commits from landing in git history before the human inspects the summary and reviewer verdict. Alternatives rejected: committing incrementally mid-task before review.
 - D14: Add Phase P9 (Beautification) and enforce human-reviewed phase success gates (2026-11-23, maintenance). Decision: Add Phase P9 (Beautification) after P8 and require human sign-off (`pending-review` -> `done`) at the end of every phase before any task in the next phase can begin. Reason: Ensures each milestone is visually and functionally verified by a human before building dependent phases on top of it, and dedicates an explicit pass to UI polish without causing scope creep during earlier feature phases. Alternatives rejected: polishing UI ad-hoc inside functional tasks; auto-advancing across phase boundaries.
+- D15: P6.2 planner agent invocation mechanism (2026-11-23, this session). Decision: Planner agent will be invoked via Bun/Node script or Agent SDK tool, callable from zod chat interface. Supports iterative refinement (multi-turn conversation with clarifying questions). Validates Mermaid syntax before writing proposed-diagram.md (fail fast). Reason: Enables natural conversational planning workflow integrated with chat. Alternatives rejected: single-shot generation; deferring validation to diagrams:check.
 
 ## 6. Open Questions
 
@@ -244,6 +245,9 @@ These must be answered from current official documentation or by a small experim
 - Q12: Behaviors nobody has specified yet (migration): (a) does the hook forwarder fail open or closed, and within what deadline; (b) does the WebSocket require the token; (c) how are duplicate or replayed events handled? Why it matters: a blocking or hanging hook can stall a user’s Claude Code session, and tests cannot encode behavior no one has chosen. Status: answered (partially). Answer: (a) Hook forwarder fails open - on server down, timeout, or any error, it exits 0 without blocking the Claude Code session. Deadline: 5 seconds (see `.claude/hooks/send_event.py` and `.claude/hooks/check_inbox_stop.py` timeout). Source: implementation in send_event.py and check_inbox_stop.py, 2026-11-23. (b) WebSocket requires token - yes, see `websocket_handler` in server.py which could check auth but currently doesn’t; need to add. (c) Duplicate events - not yet implemented; server stores all events with unique uuid. Status: open (b, c). Answer, source, date:
 - Q13: P3.2 diff-reviewer finding: `match_path_to_mappings` docstring says "returns zero or more nodes" (plural) but implementation returns at most one (single best match). Section 4.1 line 176 also says "returns zero or more nodes." Is returning multiple nodes (e.g., all matches tied at max specificity) intended for future use, or should the docstring/requirements be updated to "at most one node"? Status: open. Answer, source, date:
 - Q14: P3.2 diff-reviewer finding: `glob_specificity` character class parsing doesn’t handle escaped `]` inside `[...]` (e.g., `[\]]`). Would incorrectly terminate at first `]`. Glob patterns rarely use this, but it’s a correctness gap. Should this be fixed now or documented as a limitation? Status: open. Answer, source, date:
+- Q15: P6.2 planner agent - How is the planner invoked? Status: answered. Answer: Invoked by Bun/Node script or Agent SDK tool, callable via zod chat. Source: user decision, 2026-11-23.
+- Q16: P6.2 planner agent - Validate Mermaid before write or rely on diagrams:check after? Status: answered. Answer: Validate Mermaid before write (fail fast). Source: user decision, 2026-11-23.
+- Q17: P6.2 planner agent - Iterative refinement or single-shot? Status: answered. Answer: Iterative refinement (multi-turn conversation with clarifying questions). Source: user decision, 2026-11-23.
 
 ## 7. Tasks
 
@@ -319,7 +323,7 @@ Notes:
 
 | ID   | What                                                                                                                                                                                                                                       | Depends on | Done when                                                                                                          | Status | Owner |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------ | ------ | ----- |
-| P6.1 | Define the plan folder format: `docs/plans/<name>/plan.md` (written plan), `proposed-diagram.md` (the Mermaid after the change), `tasks.md` (task list, each task tagged with node IDs it touches). Document it in `docs/plans/README.md`. | P4.1       | The README documents the format, and one hand-written sample plan passes `npm run diagrams:check`.                 | pending-review | Session 19 |
+| P6.1 | Define the plan folder format: `docs/plans/<name>/plan.md` (written plan), `proposed-diagram.md` (the Mermaid after the change), `tasks.md` (task list, each task tagged with node IDs it touches). Document it in `docs/plans/README.md`. | P4.1       | The README documents the format, and one hand-written sample plan passes `npm run diagrams:check`.                 | done   | Session 20 |
 | P6.2 | Create a read-only planner agent definition at `.claude/agents/planner.md`. It reads the repo and diagrams, asks only necessary questions, and writes only the three plan files.                                                           | P6.1       | Running it on a sample request produces all three files and changes no other file.                                 | done   | Session 20 |
 | P6.3 | Render Current versus Proposed on one canvas by comparing the two diagrams: added nodes green, modified amber, removed red.                                                                                                                | P6.1, P4.3 | The sample plan shows at least one node in each of the three states.                                               | todo   |       |
 | P6.4 | Add a panel listing the plan’s assumptions and open questions, taken from a labelled section of `plan.md`, with a reply box for each.                                                                                                      | P6.2       | Replying to an assumption sends the reply to the planner and the panel updates after the planner revises the plan. | todo   |       |
@@ -757,22 +761,27 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Review: test-maker spec (PASS, 31 tests written with pending markers); test-maker verify (PASS, xfail markers corrected); diff-reviewer (PASS WITH NOTES, no BLOCKING findings; noted: task status should be `pending-review` per status definitions, unrelated changes in working tree from other tasks)
 - Diagrams changed: No diagram changes needed (system-overview.md and diagram-map.yaml node IDs consistent with sample plan)
 - Not done: P6.2+ (remaining Planning mode tasks), P4.1 is done but P4.3 is missing (DiagramPanel background grid); unrelated working tree changes: apps/server/server.py (UUID addition), apps/client Diagrampanel.tsx/MermaidViewer.tsx/css
-- Next task: User review and approval of P6.1 completion (phase sign-off), then P6.2 (Planner agent definition)
+- Next task: P6.2 (Planner agent definition)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 19: 2026-11-23 (Claude) — *Updated with P6.1 sign-off*
+
+- **P6.1 SIGNED OFF** by user on 2026-11-23. Phase P6 now approved for P6.2+.
 
 ### Session 20: 2026-11-23 (Claude)
 
-- Goal: P6.2 (Create planner agent definition at .claude/agents/planner.md)
-- Done-when, in my words: Create a read-only planner agent definition that reads repo/diagrams, asks only necessary questions, and writes only three plan files to docs/plans/<kebab-case-name>/. The definition itself is the deliverable for P6.2.
+- Goal: P6.2 (Create planner agent definition at .claude/agents/planner.md) + P6.1 sign-off
+- Done-when, in my words: Create a read-only planner agent definition that reads repo/diagrams, asks only necessary questions, and writes only three plan files to docs/plans/<kebab-case-name>/. The definition itself is the deliverable for P6.2. Also: User sign-off on P6.1.
 - Starting state: P6.1 pending-review, planner.md did not exist, client types.ts missing uuid field
 - What changed:
-  - `.claude/agents/planner.md` created - Read-only planner agent definition with constraints (read-only to repo, writes only to docs/plans/, uses node IDs from diagram-map.yaml, validates Mermaid)
+  - `.claude/agents/planner.md` created - Read-only planner agent definition with constraints (read-only to repo, writes only to docs/plans/, uses node IDs from diagram-map.yaml, validates Mermaid before write, iterative refinement via Agent SDK)
   - `apps/client/src/types.ts` - Added `uuid: string` to `HookEvent` interface to match server WebSocket broadcast format
   - `apps/client/src/components/DiagramPanel.tsx` - Fixed unused variable `prefix` with `void prefix;`
+  - `docs/plans/zod-control-center.md` - P6.1 status updated to `done`, P6 dashboard to `done`, recorded Decisions D15 and Open Questions Q15-Q17
 - Verified:
   - `npm run check` passes (typecheck + 207 client unit tests + 184 server tests + diagrams:check = all pass)
   - diff-reviewer: PASS WITH NOTES (no BLOCKING findings; Done-when check MET; noted: unused prefix variable in DiagramPanel, partial uuid sync across interfaces)
-- Review: test-maker spec (ran in background during planning); test-maker verify (completed); diff-reviewer (completed, no BLOCKING findings)
+- Review: test-maker spec (ran in background during planning, 30 tests written with pending:P6.2); test-maker verify (completed, spec test integrity CLEAN, 100% mutation kill rate); diff-reviewer (completed, no BLOCKING findings)
 - Diagrams changed: No diagram changes needed
 - Not done: P6.3 (Render Current vs Proposed), P6.4 (Assumptions panel), P6.5+ (remaining Planning mode tasks)
 - Next task: P6.3 (Render Current versus Proposed on one canvas)

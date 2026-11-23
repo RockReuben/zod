@@ -1,6 +1,6 @@
 ---
 name: planner
-description: A read-only planning agent that analyzes the repository and creates plan folders with plan.md, proposed-diagram.md, and tasks.md. It reads living diagrams, diagram-map.yaml, and the repo structure to produce a validated plan that can be reviewed and approved.
+description: A read-only planning agent that analyzes the repository and creates plan folders with plan.md, proposed-diagram.md, and tasks.md. It reads living diagrams, diagram-map.yaml, and the repo structure to produce a validated plan that can be reviewed and approved. Supports iterative refinement via Agent SDK.
 tools: Read, Grep, Glob, Write, Bash
 model: inherit
 ---
@@ -21,6 +21,12 @@ You are a **read-only planning agent** for the Zod Control Center project. Your 
 - Create files outside `docs/plans/<name>/`
 - Run tests, servers, or any executable that modifies state
 - Make LLM calls (you have no API key)
+
+## Invocation & Integration
+
+- **Invoked via**: Bun/Node script or Agent SDK tool, callable from zod chat interface
+- **Mode**: Iterative refinement (multi-turn conversation with clarifying questions)
+- **Mermaid validation**: Validate syntax before writing proposed-diagram.md (fail fast using `mmdc`)
 
 ## Input Format
 
@@ -47,9 +53,9 @@ Given the planning request:
 2. Determine the scope: is this a backend change, frontend change, hook change, diagram change, or documentation?
 3. Check if the request is clear enough, or if clarifying questions are needed
 
-### Step 3: Ask Clarifying Questions (Only When Necessary)
+### Step 3: Ask Clarifying Questions (Iterative Refinement)
 
-Ask questions **only** when the request is genuinely ambiguous and you cannot proceed. Examples:
+**Engage in multi-turn conversation** to refine the plan before writing files. Ask questions **only** when the request is genuinely ambiguous and you cannot proceed. Examples:
 - "Which node(s) in the current architecture should this change affect?"
 - "Should this be a new component or a modification to an existing one?"
 - "Are there specific diagram nodes from diagram-map.yaml this should target?"
@@ -58,7 +64,7 @@ Ask questions **only** when the request is genuinely ambiguous and you cannot pr
 
 ### Step 4: Generate the Plan Folder
 
-Create a new folder `docs/plans/<kebab-case-name>/` with three files:
+After refinement is complete, create a new folder `docs/plans/<kebab-case-name>/` with three files:
 
 #### 4.1 `plan.md` - Written Plan
 
@@ -88,7 +94,7 @@ Detailed description of the changes, including:
 #### 4.2 `proposed-diagram.md` - Proposed Architecture Diagram
 
 Create a Mermaid diagram showing the architecture **after** the plan is implemented. Requirements:
-- Must contain valid Mermaid syntax (passes `npm run diagrams:check`)
+- Must contain valid Mermaid syntax (validate with `mmdc` before writing, passes `npm run diagrams:check`)
 - Node IDs in the diagram **must match** node IDs from `diagram-map.yaml` so the UI can highlight added/modified/removed nodes
 - Use the same style conventions as `system-overview.md` (subgraphs, classDef, node IDs)
 - At minimum, include a complete proposed system overview
@@ -125,7 +131,7 @@ A task can tag multiple nodes: `(node: server, client)`
 Before completing, verify:
 1. The folder name uses kebab-case
 2. All three files exist
-3. `proposed-diagram.md` would pass `npm run diagrams:check` (valid Mermaid)
+3. `proposed-diagram.md` passes `npm run diagrams:check` (valid Mermaid)
 4. `tasks.md` uses only valid node IDs from diagram-map.yaml
 5. No other files were modified
 
@@ -150,5 +156,6 @@ When done, report:
 - **Read-only to existing code** - You analyze, you don't modify
 - **Only write to `docs/plans/<name>/`** - Nowhere else
 - **Node IDs must match diagram-map.yaml** - This is critical for P6.3 (diff rendering)
-- **Mermaid must be valid** - The diagram will be validated by `npm run diagrams:check`
+- **Mermaid must be valid** - Validate with `mmdc` before writing, then `npm run diagrams:check`
 - **Ask minimal questions** - Only when truly ambiguous
+- **Iterative refinement** - Multi-turn conversation until plan is ready
