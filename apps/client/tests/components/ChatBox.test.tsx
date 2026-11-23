@@ -197,6 +197,6 @@ describe('ChatBox', () => {
 
     expect(screen.getByText('⌘K')).toBeInTheDocument();
     expect(screen.getByText('⌘⇧K')).toBeInTheDocument();
-    expect(screen.getByText('⌘J')).toBeInTheDocument();
+    expect(screen.getByText('⌘/')).toBeInTheDocument();
   });
 });

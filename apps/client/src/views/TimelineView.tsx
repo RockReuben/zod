@@ -77,6 +77,8 @@ export function TimelineView() {
   const stopReplay = useEventsStore((s) => s.stopReplay);
   const setReplaySpeed = useEventsStore((s) => s.setReplaySpeed);
 
+  const [showReplaySelector, setShowReplaySelector] = useState(false);
+
   // Fetch sessions on mount
   useEffect(() => {
     fetchSessions();
@@ -141,11 +143,27 @@ export function TimelineView() {
           onStop={stopReplay}
         />
       ) : (
-        <ReplaySessionSelector
-          sessions={replay.sessions}
-          onSelect={startReplay}
-          disabled={replay.sessions.length === 0}
-        />
+        <>
+          <div className="replay-toggle-row">
+            <button
+              className={`replay-toggle-btn ${showReplaySelector ? 'active' : ''}`}
+              onClick={() => setShowReplaySelector(!showReplaySelector)}
+              type="button"
+            >
+              {showReplaySelector ? '✕ Hide Replay' : '▶ Replay Session'}
+            </button>
+          </div>
+          {showReplaySelector && (
+            <ReplaySessionSelector
+              sessions={replay.sessions}
+              onSelect={(sessionId) => {
+                startReplay(sessionId);
+                setShowReplaySelector(false);
+              }}
+              disabled={replay.sessions.length === 0}
+            />
+          )}
+        </>
       )}
 
       {!replay.isReplaying && <FilterBar />}
