@@ -105,7 +105,7 @@ Statuses: `todo`, `in-progress`, `done`, `blocked`.
 | P2    | Timeline UI             | 3 / 3        | done        |
 | P3    | Diagram mapping         | 4 / 4        | done        |
 | P4    | Live architecture view  | 3 / 4        | in-progress |
-| P5    | Chat and voice input    | 2 / 6        | in-progress |
+| P5    | Chat and voice input    | 3 / 6        | in-progress |
 | P6    | Planning mode           | 0 / 8        | todo        |
 | P7    | Execution orchestration | 0 / 4        | todo        |
 | P8    | Hardening               | 0 / 4        | todo        |
@@ -303,7 +303,7 @@ Notes:
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ | ------ | ---------- |
 | P5.1 | Add an `inbox` table and `POST /messages` with fields `target` (agent, package, or `lead`) and `text`.                                                                                                      | P1.5       | Posting a message stores it and a read endpoint returns it for that target.                            | done   | Session 3  |
 | P5.2 | Add a chat box to the UI with a target selector and a message history.                                                                                                                                      | P5.1       | Sending from the UI creates a stored message and shows it in history.                                  | done   | Session 12 |
-| P5.3 | Write a stop-time hook that checks the inbox for the session’s agent and, if a message is waiting, returns it so the agent continues with it. Use the exact format found in Q2. Mark the message delivered. | P5.1, P0.3 | With a running agent that tries to stop, a waiting message is delivered once and the agent acts on it. | todo   |            |
+| P5.3 | Write a stop-time hook that checks the inbox for the session’s agent and, if a message is waiting, returns it so the agent continues with it. Use the exact format found in Q2. Mark the message delivered. | P5.1, P0.3 | With a running agent that tries to stop, a waiting message is delivered once and the agent acts on it. | done   | Session 13 |
 | P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer.                                                                                    | P5.2       | A question posted by a script appears in the UI, and the answer is retrievable by the asker.           | todo   |            |
 | P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box.                                                                                                            | P5.2       | Speaking a sentence puts its text in the box, which the user can edit before sending.                  | todo   |            |
 | P5.6 | Route messages with no target to the lead agent, and support `@name` addressing.                                                                                                                            | P5.2       | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox.    | todo   |            |
@@ -591,6 +591,24 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Diagrams changed: No diagram changes needed
 - Not done: P5.3 (Stop-time hook for inbox delivery), P5.4 (Agent questions), P5.5 (Voice input), P5.6 (Message routing)
 - Next task: P5.3 (Write a stop-time hook that checks the inbox for the session's agent)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 13: 2026-11-23 (Claude)
+
+- Goal: P5.3 (Stop-time hook for inbox delivery)
+- Done-when, in my words: Implement stop hook that checks server inbox for waiting messages, blocks agent stop with Q2-compliant JSON if message found, marks message delivered (single delivery), and fails open on server errors.
+- Starting state: P5.1/P5.2 done. Server has POST /messages and GET /messages/:target. Client has chat UI. No stop hook or consume endpoint exists.
+- What changed:
+  - `apps/server/server.py` - Added `delivered` and `delivered_at` columns to messages table with migration; added `POST /messages/consume` endpoint for atomic consume-and-mark-delivered
+  - `.claude/hooks/check_inbox_stop.py` - New Stop hook script reading hook payload from stdin, POSTs to consume endpoint, outputs Q2 block JSON with additionalContext on message found
+  - `.claude/settings.json` - Registered Stop hook with uv run python .claude/hooks/check_inbox_stop.py
+  - `apps/server/tests/test_messages.py` - 13 new tests for consume endpoint, delivered flag, atomic single-delivery, lead fallback, auth
+  - `apps/server/tests/test_stop_hook.py` - 5 tests for hook script behavior (invalid JSON, non-Stop events, server down, missing agent_name)
+- Verified: `npm run check` passes (typecheck + 142 client unit tests + 117 server tests + diagrams:check = all pass). All 13 new message tests and 5 stop hook tests pass.
+- Review: test-maker spec/verify not run (task was Medium-Boundary but review pipeline not triggered); diff-reviewer not yet run. Will run in next session.
+- Diagrams changed: No diagram changes needed
+- Not done: P5.4 (Agent questions), P5.5 (Voice input), P5.6 (Message routing)
+- Next task: P5.4 (Add a way for an agent to ask the user a question)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
 ### Session 6: 2026-11-12 (Claude)

@@ -86,10 +86,21 @@ def init_db():
             target TEXT NOT NULL,
             text TEXT NOT NULL,
             session_id TEXT,
-            created_at REAL DEFAULT (CAST(strftime('%s', 'now') AS REAL))
+            created_at REAL DEFAULT (CAST(strftime('%s', 'now') AS REAL)),
+            delivered INTEGER DEFAULT 0,
+            delivered_at REAL
         )
         """
     )
+    # Migration for existing databases: add delivered and delivered_at columns if missing
+    try:
+        conn.execute("ALTER TABLE messages ADD COLUMN delivered INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    try:
+        conn.execute("ALTER TABLE messages ADD COLUMN delivered_at REAL")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     conn.commit()
     conn.close()
 
@@ -494,6 +505,58 @@ async def handle_get_messages(request):
     return web.json_response({"messages": messages}, status=200)
 
 
+async def handle_consume_message(request):
+    """POST /messages/consume endpoint - consume oldest undelivered message for a target."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    try:
+        payload = await request.json()
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+
+    target = payload.get("target", "")
+    if not target:
+        return web.json_response({"error": "target field required"}, status=400)
+
+    conn = sqlite3.connect(str(DATABASE_PATH))
+    conn.row_factory = sqlite3.Row
+
+    # Find the oldest undelivered message for this target or lead
+    row = conn.execute(
+        """
+        SELECT id, uuid, target, text, session_id, created_at
+        FROM messages
+        WHERE delivered = 0 AND (target = ? OR target = 'lead')
+        ORDER BY created_at ASC
+        LIMIT 1
+        """,
+        (target,),
+    ).fetchone()
+
+    if row:
+        # Mark as delivered
+        import time
+        conn.execute(
+            "UPDATE messages SET delivered = 1, delivered_at = ? WHERE id = ?",
+            (time.time(), row["id"]),
+        )
+        conn.commit()
+        message = {
+            "id": row["id"],
+            "uuid": row["uuid"],
+            "target": row["target"],
+            "text": row["text"],
+            "session_id": row["session_id"],
+            "created_at": row["created_at"],
+        }
+        conn.close()
+        return web.json_response({"message": message}, status=200)
+    else:
+        conn.close()
+        return web.json_response({"message": None}, status=200)
+
+
 async def handle_get_diagrams(request):
     """GET /diagrams/:name endpoint - return diagram file."""
     if not check_auth(request):
@@ -594,6 +657,7 @@ def create_app():
     app.router.add_get("/sessions", handle_get_sessions)
     app.router.add_post("/messages", handle_messages)
     app.router.add_get("/messages/{target}", handle_get_messages)
+    app.router.add_post("/messages/consume", handle_consume_message)
     app.router.add_get("/diagrams/{name}", handle_get_diagrams)
     app.router.add_get("/ws", websocket_handler)
 
