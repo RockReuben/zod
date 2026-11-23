@@ -102,6 +102,22 @@ def init_db():
         conn.execute("ALTER TABLE messages ADD COLUMN delivered_at REAL")
     except sqlite3.OperationalError:
         pass  # Column already exists
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid TEXT NOT NULL,
+            session_id TEXT NOT NULL,
+            agent_name TEXT NOT NULL,
+            question_text TEXT NOT NULL,
+            answer_text TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at REAL DEFAULT (CAST(strftime('%s', 'now') AS REAL)),
+            answered_at REAL
+        )
+        """
+    )
     conn.commit()
     conn.close()
 
@@ -560,6 +576,188 @@ async def handle_consume_message(request):
         return web.json_response({"message": None}, status=200)
 
 
+async def handle_post_question(request):
+    """POST /questions endpoint - agent posts a question."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    try:
+        payload = await request.json()
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+
+    session_id = payload.get("session_id", "")
+    agent_name = payload.get("agent_name", "")
+    question_text = payload.get("question", "")
+
+    if not session_id or not agent_name or not question_text:
+        return web.json_response(
+            {"error": "session_id, agent_name, and question are required"},
+            status=400,
+        )
+
+    conn = sqlite3.connect(str(DATABASE_PATH))
+    q_uuid = str(uuid.uuid4())
+    conn.execute(
+        """
+        INSERT INTO questions (uuid, session_id, agent_name, question_text)
+        VALUES (?, ?, ?, ?)
+        """,
+        (q_uuid, session_id, agent_name, question_text),
+    )
+    conn.commit()
+    q_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+
+    # Broadcast to WebSocket clients
+    event_data = {
+        "type": "question",
+        "question_id": q_id,
+        "uuid": q_uuid,
+        "session_id": session_id,
+        "agent_name": agent_name,
+        "question_text": question_text,
+        "status": "pending",
+        "created_at": time.time(),
+    }
+    asyncio.create_task(broadcast_event(event_data))
+
+    return web.json_response(
+        {"question_id": q_id, "uuid": q_uuid}, status=200
+    )
+
+
+async def handle_get_question_answer(request):
+    """GET /questions/:id/answer endpoint - agent retrieves answer."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    q_id = request.match_info.get("id", "")
+    if not q_id:
+        return web.json_response({"error": "question id required"}, status=400)
+
+    conn = sqlite3.connect(str(DATABASE_PATH))
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT answer_text, status, answered_at FROM questions WHERE id = ?",
+        (q_id,),
+    ).fetchone()
+    conn.close()
+
+    if not row:
+        return web.json_response({"error": "Question not found"}, status=404)
+
+    return web.json_response(
+        {
+            "answer": row["answer_text"],
+            "status": row["status"],
+            "answered_at": row["answered_at"],
+        },
+        status=200,
+    )
+
+
+async def handle_post_question_answer(request):
+    """POST /questions/:id/answer endpoint - UI/user posts answer."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    q_id = request.match_info.get("id", "")
+    if not q_id:
+        return web.json_response({"error": "question id required"}, status=400)
+
+    try:
+        payload = await request.json()
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+
+    answer_text = payload.get("answer", "")
+    if not answer_text:
+        return web.json_response({"error": "answer is required"}, status=400)
+
+    import time
+    now = time.time()
+
+    conn = sqlite3.connect(str(DATABASE_PATH))
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT id FROM questions WHERE id = ?", (q_id,)
+    ).fetchone()
+
+    if not row:
+        conn.close()
+        return web.json_response({"error": "Question not found"}, status=404)
+
+    conn.execute(
+        """
+        UPDATE questions SET answer_text = ?, status = 'answered', answered_at = ? WHERE id = ?
+        """,
+        (answer_text, now, q_id),
+    )
+    conn.commit()
+    conn.close()
+
+    # Broadcast answer to WebSocket clients
+    event_data = {
+        "type": "question_answer",
+        "question_id": q_id,
+        "answer_text": answer_text,
+        "answered_at": now,
+    }
+    asyncio.create_task(broadcast_event(event_data))
+
+    return web.json_response({"status": "answered", "question_id": int(q_id)}, status=200)
+
+
+async def handle_get_questions(request):
+    """GET /questions endpoint - list questions (for UI polling)."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    status_filter = request.query.get("status", "pending")
+
+    conn = sqlite3.connect(str(DATABASE_PATH))
+    conn.row_factory = sqlite3.Row
+
+    if status_filter == "all":
+        rows = conn.execute(
+            """
+            SELECT id, uuid, session_id, agent_name, question_text, answer_text, status, created_at, answered_at
+            FROM questions
+            ORDER BY created_at DESC
+            """
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            """
+            SELECT id, uuid, session_id, agent_name, question_text, answer_text, status, created_at, answered_at
+            FROM questions
+            WHERE status = ?
+            ORDER BY created_at DESC
+            """,
+            (status_filter,),
+        ).fetchall()
+    conn.close()
+
+    questions = []
+    for row in rows:
+        questions.append(
+            {
+                "id": row["id"],
+                "uuid": row["uuid"],
+                "session_id": row["session_id"],
+                "agent_name": row["agent_name"],
+                "question_text": row["question_text"],
+                "answer_text": row["answer_text"],
+                "status": row["status"],
+                "created_at": row["created_at"],
+                "answered_at": row["answered_at"],
+            }
+        )
+
+    return web.json_response({"questions": questions}, status=200)
+
+
 async def handle_get_diagrams(request):
     """GET /diagrams/:name endpoint - return diagram file."""
     if not check_auth(request):
@@ -661,6 +859,10 @@ def create_app():
     app.router.add_post("/messages", handle_messages)
     app.router.add_get("/messages/{target}", handle_get_messages)
     app.router.add_post("/messages/consume", handle_consume_message)
+    app.router.add_post("/questions", handle_post_question)
+    app.router.add_get("/questions", handle_get_questions)
+    app.router.add_get("/questions/{id}/answer", handle_get_question_answer)
+    app.router.add_post("/questions/{id}/answer", handle_post_question_answer)
     app.router.add_get("/diagrams/{name}", handle_get_diagrams)
     app.router.add_get("/ws", websocket_handler)
 

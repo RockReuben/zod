@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { TimelineView } from './views/TimelineView';
 import { DiagramPanel } from './components/DiagramPanel';
 import { ChatPanel } from './components/ChatPanel';
+import { QuestionsPanel } from './components/QuestionsPanel';
 import { useEventsStore } from './stores/events';
 import { useShortcut } from './hooks/useKeybindings';
+import { useEventStream } from './hooks/useEventStream';
 import './index.css';
 
 function App() {
@@ -12,6 +14,11 @@ function App() {
   const clearExpiredHighlights = useEventsStore((s) => s.clearExpiredHighlights);
   const updateAvailableTargets = useEventsStore((s) => s.updateAvailableTargets);
   const events = useEventsStore((s) => s.events);
+  const startQuestionsPolling = useEventsStore((s) => s.startQuestionsPolling);
+  const stopQuestionsPolling = useEventsStore((s) => s.stopQuestionsPolling);
+
+  // Initialize WebSocket event stream
+  useEventStream();
 
   // Clear expired highlights every second
   useEffect(() => {
@@ -25,6 +32,12 @@ function App() {
   useEffect(() => {
     updateAvailableTargets();
   }, [events, updateAvailableTargets]);
+
+  // Start questions polling
+  useEffect(() => {
+    startQuestionsPolling();
+    return () => stopQuestionsPolling();
+  }, [startQuestionsPolling, stopQuestionsPolling]);
 
   // Initialize shortcuts (this loads the keybindings config)
   useShortcut('toggleChatPanel', () => {}, []);
@@ -53,6 +66,9 @@ function App() {
         </main>
         <div className="timeline-section">
           <TimelineView />
+        </div>
+        <div className="questions-panel-container">
+          <QuestionsPanel />
         </div>
         <div className="chat-panel-container">
           <ChatPanel />

@@ -7,6 +7,18 @@ const HIGHLIGHT_FADE_MS = 10000; // 10 seconds
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8081';
 const TOKEN = import.meta.env.VITE_TOKEN || 'zod-control-center-token';
 
+export interface Question {
+  id: number;
+  uuid: string;
+  session_id: string;
+  agent_name: string;
+  question_text: string;
+  answer_text: string | null;
+  status: 'pending' | 'answered';
+  created_at: number;
+  answered_at: number | null;
+}
+
 export interface FilterState {
   sourceApp: string;
   agentName: string;
@@ -42,6 +54,10 @@ interface EventsState {
   availableTargets: string[];
   chatPanelOpen: boolean;
   messagePollingInterval: ReturnType<typeof setInterval> | null;
+
+  // Question state
+  questions: Question[];
+  questionsPollingInterval: ReturnType<typeof setInterval> | null;
 
   addEvent: (event: HookEvent) => void;
   setFilter: (key: keyof FilterState, value: string) => void;
@@ -80,6 +96,14 @@ interface EventsState {
   setChatPanelOpen: (open: boolean) => void;
   startMessagePolling: (target: string) => void;
   stopMessagePolling: () => void;
+
+  // Question actions
+  fetchQuestions: () => Promise<void>;
+  answerQuestion: (questionId: number, answer: string) => Promise<void>;
+  addQuestion: (question: Question) => void;
+  updateQuestion: (questionId: number, updates: Partial<Question>) => void;
+  startQuestionsPolling: () => void;
+  stopQuestionsPolling: () => void;
 }
 
 const initialFilters: FilterState = {
@@ -106,6 +130,9 @@ const useEventsStore = create<EventsState>((set, get) => ({
   availableTargets: ['lead'],
   chatPanelOpen: false,
   messagePollingInterval: null,
+
+  questions: [],
+  questionsPollingInterval: null,
 
   addEvent: (event: HookEvent) => {
     const { events, replay } = get();
@@ -411,6 +438,76 @@ const useEventsStore = create<EventsState>((set, get) => ({
     if (messagePollingInterval) {
       clearInterval(messagePollingInterval);
       set({ messagePollingInterval: null });
+    }
+  },
+
+  // Question actions
+  fetchQuestions: async () => {
+    try {
+      const response = await fetch(`${API_BASE}/questions?status=pending`, {
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch questions');
+      const data = await response.json();
+      const questions = data.questions || [];
+      set({ questions });
+    } catch (e) {
+      console.error('Failed to fetch questions:', e);
+      set({ questions: [] });
+    }
+  },
+
+  answerQuestion: async (questionId: number, answer: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/questions/${questionId}/answer`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ answer }),
+      });
+      if (!response.ok) throw new Error('Failed to answer question');
+      // Update local state optimistically
+      get().updateQuestion(questionId, { status: 'answered', answer_text: answer });
+    } catch (e) {
+      console.error('Failed to answer question:', e);
+      throw e;
+    }
+  },
+
+  addQuestion: (question: Question) => {
+    set((state) => ({
+      questions: [question, ...state.questions.filter((q) => q.id !== question.id)],
+    }));
+  },
+
+  updateQuestion: (questionId: number, updates: Partial<Question>) => {
+    set((state) => ({
+      questions: state.questions.map((q) =>
+        q.id === questionId ? { ...q, ...updates } : q
+      ),
+    }));
+  },
+
+  startQuestionsPolling: () => {
+    const { questionsPollingInterval } = get();
+    if (questionsPollingInterval) {
+      clearInterval(questionsPollingInterval);
+    }
+    // Initial fetch
+    get().fetchQuestions();
+    const interval = setInterval(() => {
+      get().fetchQuestions();
+    }, 3000); // Poll every 3 seconds
+    set({ questionsPollingInterval: interval });
+  },
+
+  stopQuestionsPolling: () => {
+    const { questionsPollingInterval } = get();
+    if (questionsPollingInterval) {
+      clearInterval(questionsPollingInterval);
+      set({ questionsPollingInterval: null });
     }
   },
 }));

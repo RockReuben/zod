@@ -55,3 +55,16 @@ export interface InboxMessage {
   text: string;
   created_at: number;
 }
+
+/** Question from agent to user */
+export interface Question {
+  id: number;
+  uuid: string;
+  session_id: string;
+  agent_name: string;
+  question_text: string;
+  answer_text: string | null;
+  status: 'pending' | 'answered';
+  created_at: number;
+  answered_at: number | null;
+}

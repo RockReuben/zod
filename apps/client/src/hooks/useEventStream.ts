@@ -12,6 +12,9 @@ export function useEventStream() {
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const addEvent = useEventsStore((s) => s.addEvent);
+  const addHighlight = useEventsStore((s) => s.addHighlight);
+  const addQuestion = useEventsStore((s) => s.addQuestion);
+  const updateQuestion = useEventsStore((s) => s.updateQuestion);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -34,6 +37,16 @@ export function useEventStream() {
         const data = JSON.parse(event.data);
         if (data.type === 'event') {
           addEvent(data as HookEvent);
+        } else if (data.type === 'question') {
+          // New question from agent
+          addQuestion(data);
+        } else if (data.type === 'question_answer') {
+          // Answer to a question
+          updateQuestion(data.question_id, {
+            status: 'answered',
+            answer_text: data.answer_text,
+            answered_at: data.answered_at,
+          });
         }
       } catch (e) {
         console.warn('[EventStream] Failed to parse message:', e);
@@ -50,7 +63,7 @@ export function useEventStream() {
       setStatus('error');
       console.error('[EventStream] WebSocket error:', error);
     };
-  }, [addEvent]);
+  }, [addEvent, addHighlight, addQuestion, updateQuestion]);
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

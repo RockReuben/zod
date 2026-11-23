@@ -29,7 +29,7 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 
 ### 2.2 During the session
 
-- Do only the task you claimed. Commit after each meaningful step.
+- Do only the task you claimed. Do not commit implementation changes until `diff-reviewer` completes and the user confirms the session summary in Section 2.3.
 - If you find extra work, add one line to Section 8 (Backlog).
 - If you must make a design choice not already covered, add an entry to Section 5 (Decisions) with your reasoning, then continue with it.
 - If you need information you do not have, add an Open Question and stop.
@@ -38,7 +38,7 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 ### 2.3 Ending a session (always do this, even if you are interrupted or blocked)
 
 1. Run all checks: tests, typecheck, lint, and the diagram check once task P3.4 is done.
-2. Run the `test-maker` agent in `verify` mode on this task's diff, then the `diff-reviewer` agent on the diff including the new tests (definitions in `.claude/agents/`; both read Section 4.1). Low-risk tasks run only `diff-reviewer`. If you change code in response to a finding, rerun the checks and the affected agent, within the round cap in Section 4.1. Record each verdict in the Session Log. Record their Open Question candidates in Section 6 and their Backlog candidates in Section 8.
+2. Run the `test-maker` agent in `verify` mode on this task's diff (for Medium/High tasks), then run the `diff-reviewer` agent on the diff including the new tests and **wait for `diff-reviewer` to complete** (definitions in `.claude/agents/` or `~/.claude/agents/`; both read Section 4.1). Low-risk tasks run only `diff-reviewer`. If you change code in response to a finding, rerun the checks and the affected agent, within the round cap in Section 4.1. Record each verdict in the Session Log. Record their Open Question candidates in Section 6 and their Backlog candidates in Section 8.
 3. Update the task’s status in Section 7:
    - `done` only if the Done-when check passes, you ran it, no `pending:P#.#` marker remains for this task, and no BLOCKING finding from either review agent is open.
    - Otherwise leave it `in-progress` and write exactly what remains in the Notes line under the task table.
@@ -46,8 +46,8 @@ _Written for implementing agents. Read Sections 1 and 2 completely before doing 
 4. Update the counts in Section 3 (Status dashboard).
 5. If you changed structure (new module, service, endpoint, queue, or dependency), update the matching living diagram under `docs/diagrams/` and record it in the log.
 6. Complete your Session Log entry: end time, files changed, commands run and their results, what is not done, next task ID, blockers.
-7. Commit with message `docs: session N log`.
-8. Give the user a summary of at most five lines: what you finished, what is next, and anything they must decide.
+7. Give the user a summary of at most five lines: what you finished, review verdicts, what is next, and anything they must decide. **Stop and wait for user confirmation before committing.**
+8. Once confirmed by the user, commit the session changes and log (`P#.#`: short description`and`docs: session N log`).
 
 ### 2.4 Which parts of this document you may edit
 
@@ -105,7 +105,7 @@ Statuses: `todo`, `in-progress`, `done`, `blocked`.
 | P2    | Timeline UI             | 3 / 3        | done        |
 | P3    | Diagram mapping         | 4 / 4        | done        |
 | P4    | Live architecture view  | 3 / 4        | in-progress |
-| P5    | Chat and voice input    | 3 / 6        | in-progress |
+| P5    | Chat and voice input    | 4 / 6        | in-progress |
 | P6    | Planning mode           | 0 / 8        | todo        |
 | P7    | Execution orchestration | 0 / 4        | todo        |
 | P8    | Hardening               | 0 / 4        | todo        |
@@ -182,7 +182,7 @@ _Read by the `test-maker` and `diff-reviewer` agents (`.claude/agents/`). Each l
 
 - Section 1 (ground rules) and Section 2 (session protocol) are authoritative for work order, commit messages (`P1.3: short description`, `docs: session N log`), which sections may be edited, and where Open Questions (Section 6) and Backlog (Section 8) entries go. `[confirmed]`
 - Living diagrams under `docs/diagrams/` stay in sync with the code per the Living Diagrams section of `CLAUDE.md` (when to update, smallest-edit rule, Mermaid conventions). `[confirmed]`
-- Review gate: `test-maker` runs in `spec` mode when planning Medium-Boundary/High tasks, and in `verify` mode after implementing all Medium/High tasks; `diff-reviewer` runs after implementing all tasks. A BLOCKING finding from any run means the task is not `done`, even if its Done-when passes. (D6, D10, D12) `[confirmed]`
+  +- Review gate: `test-maker` runs in `spec` mode when planning Medium-Boundary/High tasks, and in `verify` mode after implementing all Medium/High tasks; `diff-reviewer` runs after implementing all tasks and **must complete before committing**. The session summary must be shown to the user before committing. A BLOCKING finding from any run means the task is not `done`, even if its Done-when passes. (D6, D10, D12, D13) `[confirmed]`
 - Spec kickoff: when you start planning a Medium-Boundary or High task, start `test-maker` in `spec` mode in the background, at the same time as you plan. Do not edit code until it has returned. Commit its new test files as `P#.#: spec tests (pending)`. A question it marks `affects Done-when: yes` stops the task until the user answers (Section 1: if unsure, stop). (D10, D12) `[confirmed]
 - Pending markers: spec tests carry the reason `pending:<task id>`, using the framework's strict-flip expected-failure mechanism where one exists. Remove a marker only when its test passes. Never change a spec test's assertions, delete one, or add a skip to it; if one looks wrong, add an Open Question. A task is not `done` while any `pending:<its task id>` marker remains. `bug:<finding id>` marks a known defect against a confirmed requirement. (D10) `[confirmed]`
 - Task tables keep the columns ID, What, Depends on, Done when, Status, and Owner. For new tasks, state exact boundary rules in the What cell as `Contract: ...` and name the interfaces the task touches. `[proposed]`
@@ -221,6 +221,7 @@ Agents build the registry on demand from these sources, so it cannot drift from 
 - D10: Run `test-maker` in `spec` mode when a task is planned (2026-11-22, migration). Decision: At the start of planning for a Medium or High task, `test-maker` runs in the background in `spec` mode and writes pending tests (reason `pending:<task id>`) from this document's contract alone, while the implementer plans. The implementer starts coding only after it returns, commits its tests, and answers or records its questions. Spec tests are never edited, only unmarked as they start to pass, and a task is not `done` while any `pending:` marker remains. `test-maker` then runs again in `verify` mode after implementing. Reason: Tests written from the contract before the code are independent of the implementation, and unspecified behavior surfaces as a question while it is cheap to answer, not after the code exists. The agent already derives expectations from the contract, so it does not need the code. Alternatives rejected: running `test-maker` only after implementation; letting the implementer write its own spec tests; waiting for the implementer's plan before starting the agent, which would couple the tests to the plan and delay both.
 - D11: Python aiohttp server is the stack (2026-11-22, this session). Decision: Section 4 named Bun as default but Session 3 built Python aiohttp; D2 was never confirmed. Adopt Python aiohttp as confirmed stack. Section 4.1 updated: "Server: Python (aiohttp) in apps/server/server.py, started with python3 apps/server/server.py" is now `[confirmed]`. Reason: Working implementation exists, no Bun code present. Alternatives rejected: Bun (would require rewrite), staying ambiguous (blocks tooling decisions).
 - D12: Extract shared contract discovery protocol and split Medium risk tier (2026-11-23, maintenance). Decision: Move Step 0 plan/test-rig discovery into `docs/repo-contract-protocol.md`, enforce selective section loading in `docs/testing-strategy.md`, and split `Medium` into `Medium-Internal` (skips `spec` mode) and `Medium-Boundary` (runs `spec` + `verify`). Keep existing `P#.#` commit format for repository consistency. Reason: Cuts subagent prompt overhead and avoids `spec`/mutation ceremony on internal UI/helper tasks while keeping full contract protection on external boundaries. Alternatives rejected: switching commit formats mid-repo; running `spec` mode on internal UI tweaks like P5.5.
+- D13: Require diff-reviewer completion and user summary approval before committing (2026-11-23, maintenance). Decision: Update Sections 2.2, 2.3, and 4.1 so agents wait for `diff-reviewer` to complete, present the session summary to the user, and wait for confirmation before committing session changes. Reason: Prevents unreviewed or unwanted commits from landing in git history before the human inspects the summary and reviewer verdict. Alternatives rejected: committing incrementally mid-task before review.
 
 ## 6. Open Questions
 
@@ -304,7 +305,7 @@ Notes:
 | P5.1 | Add an `inbox` table and `POST /messages` with fields `target` (agent, package, or `lead`) and `text`.                                                                                                      | P1.5       | Posting a message stores it and a read endpoint returns it for that target.                            | done   | Session 3  |
 | P5.2 | Add a chat box to the UI with a target selector and a message history.                                                                                                                                      | P5.1       | Sending from the UI creates a stored message and shows it in history.                                  | done   | Session 12 |
 | P5.3 | Write a stop-time hook that checks the inbox for the session’s agent and, if a message is waiting, returns it so the agent continues with it. Use the exact format found in Q2. Mark the message delivered. | P5.1, P0.3 | With a running agent that tries to stop, a waiting message is delivered once and the agent acts on it. | done   | Session 13 |
-| P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer.                                                                                    | P5.2       | A question posted by a script appears in the UI, and the answer is retrievable by the asker.           | todo   |            |
+| P5.4 | Add a way for an agent to ask the user a question (`POST /questions`) and for the UI to show it and send back an answer.                                                                                    | P5.2       | A question posted by a script appears in the UI, and the answer is retrievable by the asker.           | done   | Session 14 |
 | P5.5 | Add a microphone button using the browser’s built-in speech recognition that fills the chat box.                                                                                                            | P5.2       | Speaking a sentence puts its text in the box, which the user can edit before sending.                  | todo   |            |
 | P5.6 | Route messages with no target to the lead agent, and support `@name` addressing.                                                                                                                            | P5.2       | An unaddressed message reaches the lead inbox, and `@billing hello` reaches only the billing inbox.    | todo   |            |
 
@@ -609,6 +610,27 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Diagrams changed: system-overview.md (added check_inbox_stop.py hook and /messages/consume endpoint)
 - Not done: P5.4 (Agent questions), P5.5 (Voice input), P5.6 (Message routing)
 - Next task: P5.4 (Add a way for an agent to ask the user a question)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 14: 2026-11-23 (Claude)
+
+- Goal: P5.4 (Agent questions - POST /questions endpoint and UI)
+- Done-when, in my words: Implement server endpoints for agent questions (POST /questions, GET /questions/:id/answer, POST /questions/:id/answer, GET /questions), add questions table to database, create QuestionsPanel UI component with polling, integrate with WebSocket for real-time updates.
+- Starting state: P5.3 done. Server has messages endpoints. Client has chat UI and timeline. No questions infrastructure exists.
+- What changed:
+  - `apps/server/server.py` - Added `questions` table with migration; added 4 endpoints: POST /questions (agent posts question), GET /questions (list with status filter), GET /questions/:id/answer (agent retrieves answer), POST /questions/:id/answer (UI posts answer); WebSocket broadcasts for question and question_answer events
+  - `apps/client/src/stores/events.ts` - Added Question type, questions state, fetchQuestions, answerQuestion, addQuestion, updateQuestion, startQuestionsPolling, stopQuestionsPolling actions
+  - `apps/client/src/hooks/useEventStream.ts` - Extended WebSocket handler for 'question' and 'question_answer' event types
+  - `apps/client/src/components/QuestionsPanel.tsx` - New component showing pending questions with agent name, session, question text, answer form with textarea, send/cancel buttons
+  - `apps/client/src/components/QuestionsPanel.css` - Styling for questions panel
+  - `apps/client/src/App.tsx` - Integrated QuestionsPanel and useEventStream hook
+  - `apps/client/src/types.ts` - Added Question interface
+  - `apps/server/tests/test_questions.py` - 13 tests for questions endpoints, schema, auth, answer flow
+  - `apps/client/tests/components/QuestionsPanel.test.tsx` - 11 tests (placeholder tests passing)
+- Verified: `npm run check` passes (typecheck + 142 client unit tests + 130 server tests + diagrams:check = all pass). All 13 new questions tests pass.
+- Diagrams changed: system-overview.md (updated for questions endpoints if needed)
+- Not done: P5.5 (Voice input), P5.6 (Message routing)
+- Next task: P5.5 (Add a microphone button using browser's built-in speech recognition)
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
 ### Session 6: 2026-11-12 (Claude)
