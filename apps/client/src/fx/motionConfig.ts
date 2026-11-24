@@ -1,5 +1,14 @@
 /** Motion configuration - single source of truth for all animation timings and thresholds */
 
+// Shared types
+export interface Clock {
+  now(): number;
+}
+
+export interface RNG {
+  (): number;
+}
+
 export interface MotionConfig {
   // Camera
   readonly camera: {
@@ -17,6 +26,10 @@ export interface MotionConfig {
     readonly followResumeMs: 4000;
     /** Scale limits for follow moves */
     readonly scaleClamp: { readonly min: 0.8; readonly max: 1.6 };
+    /** Duration multiplier for distance-based calculation */
+    readonly durationDistanceFactor: 0.8;
+    /** Long hop threshold: fraction of viewport diagonal */
+    readonly longHopDiagonalFraction: 0.5;
   };
 
   // Effects
@@ -29,6 +42,10 @@ export interface MotionConfig {
     readonly fadeStartFraction: 0.7;
     /** Cue-in starts at this fraction of pan progress */
     readonly cueInAtPanProgress: 0.55;
+    /** Write effect: minimum ring radius for particles */
+    readonly writeMinRingRadius: 48;
+    /** Write effect: ring radius offset from half-diagonal */
+    readonly writeRingRadiusOffset: 20;
   };
 
   // Effect durations (ms)
@@ -95,12 +112,16 @@ export const motionConfig: MotionConfig = {
     deadZoneRatio: 0.6,
     followResumeMs: 4000,
     scaleClamp: { min: 0.8, max: 1.6 },
+    durationDistanceFactor: 0.8,
+    longHopDiagonalFraction: 0.5,
   },
   effects: {
     maxParticles: 300,
     maxDPR: 2,
     fadeStartFraction: 0.7,
     cueInAtPanProgress: 0.55,
+    writeMinRingRadius: 48,
+    writeRingRadiusOffset: 20,
   },
   durations: {
     write: 800,

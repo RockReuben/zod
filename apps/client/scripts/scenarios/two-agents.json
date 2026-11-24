@@ -1,0 +1,126 @@
+{
+  "name": "two-agents",
+  "description": "Two agents with interleaved trails (server <-> client)",
+  "events": [
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-alpha",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file0.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 0
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-beta",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/client/file1.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 800
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-alpha",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file2.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1600
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-beta",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/client/file3.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 2400
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-alpha",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file4.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 3200
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-beta",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/client/file5.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 4000
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-alpha",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file6.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 4800
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-beta",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/client/file7.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 5600
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-alpha",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file8.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 6400
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-beta",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/client/file9.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 7200
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-alpha",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file10.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 8000
+    },
+    {
+      "session_id": "sim-two-agents",
+      "source_app": "test-app",
+      "agent_name": "agent-beta",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/client/file11.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 8800
+    }
+  ]
+}

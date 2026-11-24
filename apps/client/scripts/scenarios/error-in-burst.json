@@ -1,0 +1,206 @@
+{
+  "name": "error-in-burst",
+  "description": "Burst of events with an error in the middle",
+  "events": [
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file0.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 0
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file1.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 100
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file2.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 200
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file3.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 300
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file4.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 400
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file5.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 500
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file6.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 600
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file7.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 700
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file8.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 800
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file9.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 900
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file10.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "error": "Rate limit exceeded", "rate_limited": true },
+      "timestamp_offset": 1000
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file11.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1100
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file12.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1200
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file13.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1300
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file14.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1400
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file15.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1500
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file16.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1600
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file17.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1700
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file18.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1800
+    },
+    {
+      "session_id": "sim-error-burst",
+      "source_app": "test-app",
+      "agent_name": "bursty-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file19.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1900
+    }
+  ]
+}

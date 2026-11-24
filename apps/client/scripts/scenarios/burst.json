@@ -1,0 +1,406 @@
+{
+  "name": "burst",
+  "description": "40 events in 2s across 3 nodes",
+  "events": [
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file0.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 0
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file1.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 50
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file2.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 100
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file3.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 150
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file4.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 200
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file5.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 250
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file6.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 300
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file7.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 350
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file8.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 400
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file9.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 450
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file10.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 500
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file11.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 550
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file12.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 600
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file13.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 650
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file14.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 700
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file15.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 750
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file16.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 800
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file17.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 850
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file18.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 900
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file19.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 950
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file20.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1000
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file21.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1050
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file22.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1100
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file23.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1150
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file24.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1200
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file25.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1250
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file26.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1300
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file27.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1350
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file28.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1400
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file29.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1450
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file30.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1500
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file31.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1550
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file32.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1600
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file33.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1650
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file34.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1700
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file35.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1750
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file36.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1800
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-b",
+      "type": "PostToolUse",
+      "tool_name": "Edit",
+      "tool_input": { "file_path": "apps/client/file37.tsx", "diagram": "docs/diagrams/system-overview.md", "node": "client" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1850
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-c",
+      "type": "PostToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": { "file_path": "apps/hooks/file38.py", "diagram": "docs/diagrams/system-overview.md", "node": "hooks" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1900
+    },
+    {
+      "session_id": "sim-burst",
+      "source_app": "test-app",
+      "agent_name": "agent-a",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file39.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1950
+    }
+  ]
+}

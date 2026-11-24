@@ -3,6 +3,7 @@ import { getApiBase, getToken } from '../config';
 import { NodeHighlight, DiffMode } from '../types';
 import { MermaidViewer } from './MermaidViewer';
 import { PlanDiffPanel } from './PlanDiffPanel';
+import { FxLayer } from '../fx/FxLayer';
 import './DiagramPanel.css';
 
 interface DiagramPanelProps {
@@ -12,6 +13,14 @@ interface DiagramPanelProps {
   diffMode?: DiffMode;
   proposedDiagram?: string;
 }
+
+// Extract mermaid code block from markdown
+const extractMermaidCode = (content: string): string | null => {
+  const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/;
+  const match = content.match(mermaidRegex);
+  console.log('[DiagramPanel] extractMermaidCode:', match ? 'found' : 'NOT FOUND', match?.[1]?.slice(0, 100));
+  return match ? match[1].trim() : null;
+};
 
 export function DiagramPanel({
   diagramName = 'system-overview',
@@ -23,7 +32,10 @@ export function DiagramPanel({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mermaidCode, setMermaidCode] = useState<string>('');
-  const renderKeyRef = useRef(0);
+  const [renderKey, setRenderKey] = useState(0);
+  const [diagramRendered, setDiagramRendered] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const svgContainerRef = useRef<HTMLDivElement>(null);
 
   const apiBase = getApiBase();
   const token = getToken();
@@ -68,14 +80,6 @@ export function DiagramPanel({
       setIsLoading(false);
     }
   }, [diagramName, apiBase, token, onDiagramError]);
-
-  const extractMermaidCode = (content: string): string | null => {
-    // Extract mermaid code block from markdown
-    const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/;
-    const match = content.match(mermaidRegex);
-    console.log('[DiagramPanel] extractMermaidCode:', match ? 'found' : 'NOT FOUND', match?.[1]?.slice(0, 100));
-    return match ? match[1].trim() : null;
-  };
 
   const applyHighlights = useCallback((svgEl: SVGSVGElement | null, highlights: NodeHighlight[]) => {
     if (!svgEl) return;
@@ -133,10 +137,11 @@ export function DiagramPanel({
   // Re-render diagram when highlights change (to apply new highlights)
   const handleRendered = useCallback(() => {
     // Find the SVG element rendered by MermaidViewer
-    const viewerContainer = document.querySelector('.mermaid-viewer-container');
+    const viewerContainer = svgContainerRef.current;
     if (viewerContainer) {
       const svgEl = viewerContainer.querySelector('svg');
       applyHighlights(svgEl, highlights);
+      setDiagramRendered(true);
     }
   }, [highlights, applyHighlights]);
 
@@ -145,6 +150,8 @@ export function DiagramPanel({
   }, [highlights, handleRendered]);
 
   useEffect(() => {
+    // fetchDiagram calls setIsLoading/setError/setMermaidCode internally
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
     fetchDiagram();
   }, [fetchDiagram]);
 
@@ -179,7 +186,7 @@ export function DiagramPanel({
         <h3>Failed to load diagram</h3>
         <p className="diagram-error-message">{error}</p>
         <button className="diagram-retry-btn" onClick={() => {
-          renderKeyRef.current += 1;
+          setRenderKey(k => k + 1);
           fetchDiagram();
         }}>
           Retry
@@ -193,10 +200,10 @@ export function DiagramPanel({
       {/* Zod badge floating over diagram */}
       <div className="zod-badge" aria-hidden="true">Zod</div>
 
-      <div className="diagram-panel-inner" style={{ flex: 1, height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className="diagram-panel-inner" style={{ flex: 1, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         <MermaidViewer
           chart={mermaidCode}
-          renderKey={String(renderKeyRef.current)}
+          renderKey={String(renderKey)}
           onError={onDiagramError}
           onRendered={handleRendered}
           wrapperClass="mermaid-viewer-wrapper"
@@ -207,7 +214,18 @@ export function DiagramPanel({
           gridColor="#334155"
           gridThickness={1}
           backgroundOpacity={1}
+          wrapperRef={wrapperRef}
+          containerRef={svgContainerRef}
         />
+        {diagramRendered && (
+          <FxLayer
+            svgContainerRef={svgContainerRef}
+            wrapperRef={wrapperRef}
+            isReady={diagramRendered}
+            diagramName={diagramName}
+            enabled={true}
+          />
+        )}
       </div>
     </div>
   );

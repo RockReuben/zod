@@ -1,0 +1,106 @@
+{
+  "name": "long-hop",
+  "description": "Alternating far-apart nodes (server <-> planning)",
+  "events": [
+    {
+      "session_id": "sim-long-hop",
+      "source_app": "test-app",
+      "agent_name": "jumper-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file0.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 0
+    },
+    {
+      "session_id": "sim-long-hop",
+      "source_app": "test-app",
+      "agent_name": "jumper-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "docs/plans/file1.md", "diagram": "docs/diagrams/system-overview.md", "node": "planning" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 1500
+    },
+    {
+      "session_id": "sim-long-hop",
+      "source_app": "test-app",
+      "agent_name": "jumper-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file2.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 3000
+    },
+    {
+      "session_id": "sim-long-hop",
+      "source_app": "test-app",
+      "agent_name": "jumper-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "docs/plans/file3.md", "diagram": "docs/diagrams/system-overview.md", "node": "planning" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 4500
+    },
+    {
+      "session_id": "sim-long-hop",
+      "source_app": "test-app",
+      "agent_name": "jumper-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file4.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 6000
+    },
+    {
+      "session_id": "sim-long-hop",
+      "source_app": "test-app",
+      "agent_name": "jumper-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "docs/plans/file5.md", "diagram": "docs/diagrams/system-overview.md", "node": "planning" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 7500
+    },
+    {
+      "session_id": "sim-long-hop",
+      "source_app": "test-app",
+      "agent_name": "jumper-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file6.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 9000
+    },
+    {
+      "session_id": "sim-long-hop",
+      "source_app": "test-app",
+      "agent_name": "jumper-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "docs/plans/file7.md", "diagram": "docs/diagrams/system-overview.md", "node": "planning" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 10500
+    },
+    {
+      "session_id": "sim-long-hop",
+      "source_app": "test-app",
+      "agent_name": "jumper-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "apps/server/file8.py", "diagram": "docs/diagrams/system-overview.md", "node": "server" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 12000
+    },
+    {
+      "session_id": "sim-long-hop",
+      "source_app": "test-app",
+      "agent_name": "jumper-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": { "file_path": "docs/plans/file9.md", "diagram": "docs/diagrams/system-overview.md", "node": "planning" },
+      "tool_output": { "success": true },
+      "timestamp_offset": 13500
+    }
+  ]
+}

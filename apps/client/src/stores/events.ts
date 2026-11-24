@@ -52,6 +52,8 @@ export interface PlanDiffState {
   isLoadingProposed: boolean;
 }
 
+type MotionSetting = 'full' | 'reduced' | 'off';
+
 interface EventsState {
   events: HookEvent[];
   filters: FilterState;
@@ -59,6 +61,9 @@ interface EventsState {
   highlights: NodeHighlight[];
   trackReads: boolean; // Client-side toggle for showing read highlights
   trackSearches: boolean; // Client-side toggle for showing search highlights
+
+  // Motion setting for effects
+  motionSetting: MotionSetting;
 
   // Message state
   messages: Map<string, InboxMessage[]>;
@@ -101,6 +106,10 @@ interface EventsState {
   clearAllHighlights: () => void;
   setTrackReads: (enabled: boolean) => void;
   setTrackSearches: (enabled: boolean) => void;
+
+  // Motion actions
+  setMotionSetting: (setting: MotionSetting) => void;
+  getReducedMotion: () => boolean;
 
   // Message actions
   fetchMessages: (target: string) => Promise<void>;
@@ -165,6 +174,7 @@ const useEventsStore = create<EventsState>((set, get) => ({
   highlights: [],
   trackReads: false, // Client-side toggle for showing read highlights
   trackSearches: false, // Client-side toggle for showing search highlights
+  motionSetting: 'full', // Motion setting for effects
 
   messages: new Map(),
   selectedTarget: 'lead',
@@ -390,6 +400,19 @@ const useEventsStore = create<EventsState>((set, get) => ({
 
   setTrackSearches: (enabled: boolean) => {
     set({ trackSearches: enabled });
+  },
+
+  // Motion actions
+  setMotionSetting: (setting: MotionSetting) => {
+    set({ motionSetting: setting });
+    localStorage.setItem('zod-fx-motion', setting);
+  },
+
+  getReducedMotion: () => {
+    const { motionSetting } = get();
+    const prefersReduced = typeof window !== 'undefined' &&
+      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return motionSetting === 'reduced' || motionSetting === 'off' || prefersReduced;
   },
 
   // Message actions

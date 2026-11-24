@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useId, useCallback } from 'react';
 import mermaid from 'mermaid';
 import svgPanZoom from 'svg-pan-zoom';
+import { storePanZoomInstance } from '../fx/panZoomUtils';
 
 /**
  * Reusable Mermaid diagram viewer with pan/zoom, auto-fit, and responsive resize.
@@ -31,6 +32,10 @@ interface MermaidViewerProps {
   gridThickness?: number;
   /** Opacity of the background diagram (0-1) */
   backgroundOpacity?: number;
+  /** Optional ref for the wrapper div (for external pan/zoom access) */
+  wrapperRef?: React.RefObject<HTMLDivElement>;
+  /** Optional ref for the SVG container div (for external SVG access) */
+  containerRef?: React.RefObject<HTMLDivElement>;
 }
 
 export function MermaidViewer({
@@ -46,9 +51,14 @@ export function MermaidViewer({
   gridColor = '#334155',
   gridThickness = 1,
   backgroundOpacity = 0.15,
+  wrapperRef: externalWrapperRef,
+  containerRef: externalContainerRef,
 }: MermaidViewerProps) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Use external refs if provided, otherwise create local ones
+  const localWrapperRef = useRef<HTMLDivElement>(null);
+  const localContainerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = externalWrapperRef ?? localWrapperRef;
+  const containerRef = externalContainerRef ?? localContainerRef;
   const svgContainerRef = useRef<HTMLDivElement>(null); // Dedicated ref for SVG (React doesn't manage children)
   const panZoomRef = useRef<ReturnType<typeof svgPanZoom> | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -96,9 +106,13 @@ export function MermaidViewer({
     });
   }, [showGrid, gridColor, gridThickness]);
 
-  const destroyPanZoom = useCallback(() => {
+  const destroyPanZoom = useCallback((): void => {
     if (panZoomRef.current) {
-      panZoomRef.current.destroy();
+      try {
+        panZoomRef.current.destroy();
+      } catch (e) {
+        console.warn('[MermaidViewer] Error destroying panZoom:', e);
+      }
       panZoomRef.current = null;
     }
     if (resizeObserverRef.current) {
@@ -122,27 +136,42 @@ export function MermaidViewer({
     svgEl.style.opacity = '1';
 
     // Initialize pan/zoom
-    const instance = svgPanZoom(svgEl, {
-      zoomEnabled: true,
-      controlIconsEnabled: true,
-      fit: true,
-      center: true,
-      minZoom: 0.1,
-      maxZoom: 10,
-      beforeZoom: () => true,
-      onZoom: () => {},
-      onPan: () => {},
-    });
+    let instance: ReturnType<typeof svgPanZoom> | null = null;
+    try {
+      instance = svgPanZoom(svgEl, {
+        zoomEnabled: true,
+        controlIconsEnabled: true,
+        fit: true,
+        center: true,
+        minZoom: 0.1,
+        maxZoom: 10,
+        beforeZoom: () => true,
+        onZoom: () => {},
+        onPan: () => {},
+      });
+    } catch (e) {
+      console.error('[MermaidViewer] Failed to initialize panZoom:', e);
+      return;
+    }
 
     panZoomRef.current = instance;
+
+    // Store instance on SVG element for external access (e.g., FxLayer)
+    if (instance) {
+      storePanZoomInstance(svgEl, instance);
+    }
 
     // Set up ResizeObserver on the wrapper (not the SVG)
     if (wrapperRef.current) {
       resizeObserverRef.current = new ResizeObserver(() => {
         if (panZoomRef.current) {
-          panZoomRef.current.resize();
-          panZoomRef.current.fit();
-          panZoomRef.current.center();
+          try {
+            panZoomRef.current.resize();
+            panZoomRef.current.fit();
+            panZoomRef.current.center();
+          } catch (e) {
+            console.warn('[MermaidViewer] Error in ResizeObserver:', e);
+          }
         }
       });
       resizeObserverRef.current.observe(wrapperRef.current);
@@ -350,6 +379,11 @@ export function useMermaidRenderer() {
         minZoom: 0.1,
         maxZoom: 10,
       });
+
+    // Store instance on SVG element for external access
+    if (panZoomRef.current) {
+      storePanZoomInstance(svgEl, panZoomRef.current);
+    }
     } catch (err) {
       if (currentRenderId !== renderIdRef.current) return;
       const errorMessage = err instanceof Error ? err.message : 'Failed to render diagram';

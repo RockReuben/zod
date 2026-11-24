@@ -1,0 +1,63 @@
+{
+  "name": "all-kinds",
+  "description": "One event of each kind on distinct nodes",
+  "events": [
+    {
+      "session_id": "sim-all-kinds",
+      "source_app": "test-app",
+      "agent_name": "writer-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "apps/server/new_module.py",
+        "diagram": "docs/diagrams/system-overview.md",
+        "node": "server"
+      },
+      "tool_output": { "success": true },
+      "timestamp_offset": 0
+    },
+    {
+      "session_id": "sim-all-kinds",
+      "source_app": "test-app",
+      "agent_name": "reader-agent",
+      "type": "PreToolUse",
+      "tool_name": "Read",
+      "tool_input": {
+        "file_path": "apps/client/src/App.tsx",
+        "diagram": "docs/diagrams/system-overview.md",
+        "node": "client"
+      },
+      "tool_output": {},
+      "timestamp_offset": 1000
+    },
+    {
+      "session_id": "sim-all-kinds",
+      "source_app": "test-app",
+      "agent_name": "searcher-agent",
+      "type": "PostToolUse",
+      "tool_name": "Grep",
+      "tool_input": {
+        "pattern": "TODO",
+        "path": "apps",
+        "diagram": "docs/diagrams/system-overview.md",
+        "node": "hooks"
+      },
+      "tool_output": { "matches": ["TODO: fix this"] },
+      "timestamp_offset": 2000
+    },
+    {
+      "session_id": "sim-all-kinds",
+      "source_app": "test-app",
+      "agent_name": "error-agent",
+      "type": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "apps/server/bad.py",
+        "diagram": "docs/diagrams/system-overview.md",
+        "node": "server"
+      },
+      "tool_output": { "error": "Permission denied", "is_error": true },
+      "timestamp_offset": 3000
+    }
+  ]
+}
