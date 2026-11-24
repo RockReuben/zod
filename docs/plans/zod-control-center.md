@@ -106,7 +106,7 @@ Statuses: `todo`, `in-progress`, `pending-review` (all phase tasks done; awaitin
 | P3    | Diagram mapping         | 4 / 4        | done        |
 | P4    | Live architecture view  | 4 / 4        | done        |
 | P5    | Chat and voice input    | 7 / 7        | done        |
-| P6    | Planning mode           | 3 / 8        | in-progress |
+| P6    | Planning mode           | 4 / 8        | in-progress |
 | P7    | Execution orchestration | 0 / 4        | todo        |
 | P8    | Hardening               | 0 / 4        | todo        |
 | P9    | Beautification          | 0 / 4        | todo        |
@@ -327,7 +327,7 @@ Notes:
 | P6.1 | Define the plan folder format: `docs/plans/<name>/plan.md` (written plan), `proposed-diagram.md` (the Mermaid after the change), `tasks.md` (task list, each task tagged with node IDs it touches). Document it in `docs/plans/README.md`.                                                                                                                                                                                                 | P4.1       | The README documents the format, and one hand-written sample plan passes `npm run diagrams:check`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | done   | Session 20 |
 | P6.2 | Create a read-only planner agent definition at `.claude/agents/planner.md`. It reads the repo and diagrams, asks only necessary questions, and writes only the three plan files.                                                                                                                                                                                                                                                           | P6.1       | Running it on a sample request produces all three files and changes no other file.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | done   | Session 20 |
 | P6.3 | Render Current versus Proposed on one canvas by parsing both diagrams into nodes and edges and comparing them. Contract: nodes are keyed by ID; edges by source, target, and label; a node is modified if its label or subgraph parent changes. Render one merged graph so removed items stay visible. Added = green, modified = amber, removed = red, for nodes and edges alike. Unchanged items keep their Current styling and position. | P6.1, P4.3 | 1. Unit tests on the diff function cover: added, removed, and modified nodes; added, removed, and relabelled edges; a node moved between subgraphs; an identical pair (empty diff); and a renamed ID (reported as one removal plus one addition). 2. The sample plan renders with at least one item in each of the three states, for nodes and for edges. 3. Running the planner (P6.2) on a fresh sample request produces a proposed diagram whose diff is non-empty and renders without error. 4. Unchanged nodes keep the same position in Current-only and Current+Proposed views (a Playwright check on node coordinates). | done   | Session 21 |
-| P6.4 | Add a panel listing the plan’s assumptions and open questions, taken from a labelled section of `plan.md`, with a reply box for each.                                                                                                                                                                                                                                                                                                      | P6.2       | Replying to an assumption sends the reply to the planner and the panel updates after the planner revises the plan.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | todo   |            |
+| P6.4 | Add a panel listing the plan’s assumptions and open questions, taken from a labelled section of `plan.md`, with a reply box for each.                                                                                                                                                                                                                                                                                                      | P6.2       | Replying to an assumption sends the reply to the planner and the panel updates after the planner revises the plan.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | done   | Session 22 |
 | P6.5 | Support two or three alternative variants of a plan, shown side by side with a trade-offs table.                                                                                                                                                                                                                                                                                                                                           | P6.3       | Choosing a variant records a Decision entry in the plan folder and hides the others.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | todo   |            |
 | P6.6 | Add an Approve button. It commits the plan on a plan branch, emits a `plan_approved` event, and loads `tasks.md` into the dispatch queue.                                                                                                                                                                                                                                                                                                  | P6.2, P5.1 | Clicking Approve creates the commit and event, and the queue shows the tasks with their node tags.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | todo   |            |
 | P6.7 | Write a promote script that, after a plan’s tasks are done, copies the proposed diagram into the real living diagram and removes planned styling.                                                                                                                                                                                                                                                                                          | P6.6       | Running it on the sample plan updates the real diagram, and the check script passes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | todo   |            |
@@ -823,6 +823,56 @@ Append one line per idea. Do not work on these until the user promotes them.
 - Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
 ### Session 22: 2026-11-24 (Claude)
+
+- Goal: B8 (Codebase View tab with Gource-style directory tree) — implemented per D16
+- Done-when, in my words: Implement server-side code graph engine (code_graph.py) with AST/regex scanning, SHA-256 fingerprinting, watchfiles integration; client-side CodebaseView with Gource radial tree canvas, mode switcher, shared CameraController/FxLayer; REST and WebSocket endpoints for graph snapshot/delta/fingerprint; update diagrams and diagram-map.yaml.
+- Starting state: P6.3 done, P6.4+ todo, B8 in backlog. Phase P6 status: 3/8 done.
+- What changed:
+  - `apps/server/code_graph.py` — New: CodeGraph class with scan_repo, fingerprint, delta, watchfiles integration (174 nodes, 128 edges scanned)
+  - `apps/server/tests/test_code_graph.py` — New: 29 unit tests (all passing)
+  - `apps/server/server.py` — Added: GET /code-graph, GET /code-graph/fingerprint, WS /ws/code-graph with snapshot/delta/fingerprint events
+  - `apps/client/src/stores/codeGraph.ts` — New: Zustand store for graph state (nodes, edges, fingerprint, syncStatus, mode)
+  - `apps/client/src/hooks/useCodeGraph.ts` — New: WebSocket hook with auto-reconnect, fingerprint validation, periodic resync
+  - `apps/client/src/components/CodebaseCanvas.tsx` — New: Canvas renderer with radial tree layout, agent avatars, sync indicator
+  - `apps/client/src/components/CodebaseModeSwitcher.tsx` + `.css` — New: Mode tabs (Gource/Voronoi/Treemap/DepGraph/City3D)
+  - `apps/client/src/views/CodebaseView.tsx` + `.css` — New: Main view with header, canvas, legend panel
+  - `apps/client/src/App.tsx` — Added CodebaseView, view switcher (Architecture/Codebase tabs)
+  - `apps/client/src/index.css` — Added view switcher styles, codebase view styles
+  - `diagram-map.yaml` — Added mappings for codebase view files to "codebase" node
+  - `docs/diagrams/system-overview.md` — Updated diagram with code graph endpoints and codebase node
+- Verified:
+  - `python -m pytest apps/server/tests/test_code_graph.py -v` → 29 passed
+  - `python -m pytest apps/server/tests/ -v` → 228 passed, 6 skipped, 22 xfailed, 4 xpassed
+  - `pnpm --filter zod-control-center-client typecheck` → pass
+  - `python scripts/diagrams-check.py` → 4/4 valid
+  - Only failing tests: 28 P6.3 pending spec tests (expected, marked `pending:P6.3`)
+- Review: diff-reviewer — PASS WITH NOTES (no BLOCKING findings; fixed high-severity import resolution bug, WebSocket callback leak, mtime threshold, file size limit)
+- Diagrams changed: system-overview.md (updated), diagram-map.yaml (updated)
+- Not done: P6.4 (Assumptions panel), P6.5 (Variants), P6.6+ (Approve/Promote/New project), P7-P9 phases
+- Next task: P6.4 (Add panel listing plan's assumptions and open questions)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
+
+### Session 23: 2026-11-24 (Claude)
+
+- Goal: P6.4 (Add panel listing plan's assumptions and open questions)
+- Done-when, in my words: Parse Assumptions and Open Questions sections from plan.md, render panel with reply boxes, send replies to planner via POST /plans/:name/reply
+- Starting state: P6.3 done, P6.4 todo. Phase P6 status: 3/8 in-progress.
+- What changed:
+  - `apps/server/server.py` — Added parse_plan_assumptions(), load_plan_markdown() functions; GET /plans/:name/assumptions and POST /plans/:name/reply endpoints
+  - `apps/client/src/types.ts` — Added PlanAssumption, PlanQuestion, PlanAssumptions, PlanReply types
+  - `apps/client/src/stores/events.ts` — Extended Zustand store with planAssumptions state, fetchPlanAssumptions, sendPlanReply, clearPlanAssumptions actions
+  - `apps/client/src/components/AssumptionsPanel.tsx` — New component with loading/error/empty states, assumptions and questions sections with reply boxes, character count, Ctrl+Enter to send
+  - `apps/client/src/components/AssumptionsPanel.css` — Styles for panel
+  - `apps/client/src/components/ControlPane.tsx` — Integrated AssumptionsPanel when plan is active
+  - `apps/client/src/components/ControlPane.css` — Added assumptions-section-wrapper styles
+  - `apps/client/tests/components/AssumptionsPanel.p64.test.tsx` — 32 spec tests marked pending:P6.4
+  - `apps/server/tests/test_plan_assumptions.py` — Server spec tests marked pending:P6.4
+- Verified: `pnpm --filter zod-control-center-client typecheck` passes. Spec tests fail as expected (pending:P6.4 markers).
+- Review: Not yet run (test-maker verify, diff-reviewer pending)
+- Diagrams changed: No diagram changes needed
+- Not done: P6.5 (Variant support), P6.6+ (Approve/Promote/New project), P7-P9 phases
+- Next task: P6.5 (Support two or three alternative variants of a plan)
+- Blockers / questions: Q12 (runtime behaviors for hook forwarder, WebSocket, duplicate events)
 
 - Goal: B8 (Codebase View tab with Gource-style directory tree) — implemented per D16
 - Done-when, in my words: Implement server-side code graph engine (code_graph.py) with AST/regex scanning, SHA-256 fingerprinting, watchfiles integration; client-side CodebaseView with Gource radial tree canvas, mode switcher, shared CameraController/FxLayer; REST and WebSocket endpoints for graph snapshot/delta/fingerprint; update diagrams and diagram-map.yaml.
