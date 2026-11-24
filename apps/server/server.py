@@ -901,6 +901,10 @@ async def code_graph_websocket_handler(request):
 
     Auth via query parameter ?token=... since browsers don't support custom headers on WebSocket.
     """
+    # Handle CORS preflight for WebSocket (manual since aiohttp_cors doesn't cover WS)
+    origin = request.headers.get("Origin", "")
+    allowed_origins = ["http://127.0.0.1:5173", "http://localhost:5173"]
+
     # Check token from query parameter (for WebSocket) or Authorization header (for HTTP)
     token = request.query.get("token")
     auth_header = request.headers.get("Authorization", "")
@@ -911,6 +915,12 @@ async def code_graph_websocket_handler(request):
         return web.json_response({"error": "Unauthorized"}, status=401)
 
     ws = web.WebSocketResponse()
+    # Set CORS headers on WebSocket response before prepare
+    if origin in allowed_origins:
+        ws.headers["Access-Control-Allow-Origin"] = origin
+        # Don't set Access-Control-Allow-Credentials with specific origin
+        # or use * for origin (but that's less secure)
+    print(f"[code_graph_ws] Upgrading connection from {origin}, token={'valid' if token else 'invalid'}")
     await ws.prepare(request)
     code_graph_clients.add(ws)
 
@@ -1010,29 +1020,28 @@ def create_app():
     # Code Graph endpoints
     app.router.add_get("/code-graph", handle_get_code_graph)
     app.router.add_get("/code-graph/fingerprint", handle_get_code_graph_fingerprint)
-    app.router.add_get("/ws/code-graph", code_graph_websocket_handler)
+    ws_code_graph_route = app.router.add_get("/ws/code-graph", code_graph_websocket_handler)
 
-    # Configure CORS for the client at localhost:5173
-    cors = aiohttp_cors.setup(
-        app,
-        defaults={
-            "http://127.0.0.1:5173": aiohttp_cors.ResourceOptions(
-                allow_credentials=True,
-                expose_headers="*",
-                allow_headers="*",
-                allow_methods="*",
-            ),
-            "http://localhost:5173": aiohttp_cors.ResourceOptions(
-                allow_credentials=True,
-                expose_headers="*",
-                allow_headers="*",
-                allow_methods="*",
-            ),
-        },
-    )
-    # Apply CORS to all routes
-    for route in list(app.router.routes()):
-        cors.add(route)
+    # CORS middleware - manual implementation to avoid aiohttp_cors conflicts with WebSocket
+    # aiohttp_cors adds a global on_response_prepare that conflicts with WebSocketResponse
+    from aiohttp import web as aiohttp_web
+
+    @aiohttp_web.middleware
+    async def cors_middleware(request, handler):
+        """Middleware to add CORS headers to responses."""
+        # Check if this is a WebSocket upgrade request
+        if request.headers.get("Upgrade", "").lower() == "websocket":
+            return await handler(request)  # Let WebSocket handler set its own CORS
+        response = await handler(request)
+        origin = request.headers.get("Origin", "")
+        allowed_origins = ["http://127.0.0.1:5173", "http://localhost:5173"]
+        if origin in allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Expose-Headers"] = "*"
+        return response
+
+    app.middlewares.append(cors_middleware)
 
     return app
 
