@@ -374,6 +374,8 @@ Append one line per idea. Do not work on these until the user promotes them.
 - B1: Structured JSON or YAML diagram model with drag-and-drop editing, rendering to Mermaid.
 - B2: Plan critique by a second agent before approval.
 - B3: Export decisions as ADR files.
+- B4: Map read/search tool events (`Read`, `Grep`, `Glob` paths in `tool_input`) to diagram nodes and highlight them with a distinct "inspecting" pulse/style alongside edit highlights.
+- B5: Debug and fix node/subcomponent pulsing and highlighting in `DiagramPanel` (ensure mapped events resolve to rendered Mermaid SVG node and subgraph IDs such as `flowchart-<id>-<n>` and visibly pulse/badge for 10 seconds).
 
 ## 9. Session Log
 
