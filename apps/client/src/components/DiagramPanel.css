@@ -72,42 +72,59 @@
   opacity: 0.9;
 }
 
-/* Zod Badge - Floating over diagram */
+/* Zod Badge - Outlined lettering over diagram */
 .zod-badge {
   position: absolute;
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  padding: 6px 16px;
-  background: linear-gradient(135deg, rgba(26, 115, 232, 0.9), rgba(26, 115, 232, 0.7));
+  padding: 4px 16px;
+  background: transparent;
+  border: 2px solid var(--accent-color, #1a73e8);
   border-radius: 50px;
-  color: white;
+  color: var(--accent-color, #1a73e8);
   font-size: 14px;
   font-weight: 700;
   font-family: inherit;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  box-shadow:
-    0 2px 12px rgba(26, 115, 232, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   pointer-events: none;
   user-select: none;
+  /* Outlined text effect using text-stroke */
+  -webkit-text-stroke: 1px var(--accent-color, #1a73e8);
+  paint-order: stroke fill;
   animation: zodPulse 3s ease-in-out infinite;
 }
 
 @keyframes zodPulse {
   0%, 100% {
-    box-shadow:
-      0 2px 12px rgba(26, 115, 232, 0.3),
-      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    border-color: var(--accent-color, #1a73e8);
+    color: var(--accent-color, #1a73e8);
+    -webkit-text-stroke-color: var(--accent-color, #1a73e8);
+    box-shadow: 0 0 20px rgba(26, 115, 232, 0.3);
   }
   50% {
-    box-shadow:
-      0 4px 20px rgba(26, 115, 232, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+    border-color: var(--accent-hover, #1557b0);
+    color: var(--accent-hover, #1557b0);
+    -webkit-text-stroke-color: var(--accent-hover, #1557b0);
+    box-shadow: 0 0 30px rgba(26, 115, 232, 0.5);
+  }
+}
+
+/* Fallback for browsers without text-stroke support */
+@supports not (-webkit-text-stroke: 1px transparent) {
+  .zod-badge {
+    text-shadow:
+      -1px -1px 0 var(--accent-color, #1a73e8),
+       1px -1px 0 var(--accent-color, #1a73e8),
+      -1px  1px 0 var(--accent-color, #1a73e8),
+       1px  1px 0 var(--accent-color, #1a73e8),
+      -2px  0 0 var(--accent-color, #1a73e8),
+       2px  0 0 var(--accent-color, #1a73e8),
+       0 -2px 0 var(--accent-color, #1a73e8),
+       0  2px 0 var(--accent-color, #1a73e8);
+    color: transparent;
   }
 }
 
