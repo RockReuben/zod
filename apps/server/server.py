@@ -897,8 +897,17 @@ async def websocket_handler(request):
 
 
 async def code_graph_websocket_handler(request):
-    """WebSocket handler for code graph real-time updates."""
-    if not check_auth(request):
+    """WebSocket handler for code graph real-time updates.
+
+    Auth via query parameter ?token=... since browsers don't support custom headers on WebSocket.
+    """
+    # Check token from query parameter (for WebSocket) or Authorization header (for HTTP)
+    token = request.query.get("token")
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+
+    if not token or token != TOKEN:
         return web.json_response({"error": "Unauthorized"}, status=401)
 
     ws = web.WebSocketResponse()

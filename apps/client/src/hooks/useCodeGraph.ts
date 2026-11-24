@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { getApiBase } from '../config';
+import { getApiBase, getToken } from '../config';
 import { useCodeGraphStore, GraphDelta, selectIsConnected, selectSyncStatus } from '../stores/codeGraph';
 
 interface UseCodeGraphOptions {
@@ -44,8 +44,9 @@ export function useCodeGraph({
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     const apiBase = getApiBase().replace('http', 'ws');
-    // Token is passed via Authorization header in WebSocket handshake
-    const wsUrl = `${apiBase}/ws/code-graph`;
+    const token = getToken();
+    // Pass token as query parameter since browsers don't support custom headers on WebSocket
+    const wsUrl = `${apiBase}/ws/code-graph?token=${encodeURIComponent(token)}`;
 
     console.log('[useCodeGraph] Connecting to', wsUrl);
 
