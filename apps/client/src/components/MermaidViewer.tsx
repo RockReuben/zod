@@ -150,9 +150,9 @@ export function MermaidViewer({
   }, []);
 
   const renderChart = async () => {
-    console.log('[MermaidViewer] renderChart called, chart length:', chart.length, 'container:', !!containerRef.current, 'containerRef.current:', containerRef.current);
-    if (!containerRef.current || !chart.trim()) {
-      console.log('[MermaidViewer] Early return - no container or empty chart');
+    console.log('[MermaidViewer] renderChart called, chart length:', chart.length, 'container:', !!containerRef.current, 'svgContainer:', !!svgContainerRef.current);
+    if (!svgContainerRef.current || !chart.trim()) {
+      console.log('[MermaidViewer] Early return - no svgContainer or empty chart');
       setIsLoading(false);
       return;
     }
@@ -190,6 +190,12 @@ export function MermaidViewer({
 
       if (!svgContainerRef.current) {
         console.log('[MermaidViewer] Early return - svgContainerRef.current is null');
+        return;
+      }
+
+      // Ensure container is ready (check again after await)
+      if (!svgContainerRef.current) {
+        console.log('[MermaidViewer] Early return - svgContainerRef.current is null after await');
         return;
       }
 
