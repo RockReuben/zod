@@ -16,6 +16,8 @@ export function ControlPane({ onDiagramChange, activeDiagram = 'system-overview'
   const events = useEventsStore((s) => s.events);
   const replay = useEventsStore((s) => s.replay);
   const availableFilters = useEventsStore((s) => s.getAvailableFilters());
+  const trackReads = useEventsStore((s) => s.trackReads);
+  const setTrackReads = useEventsStore((s) => s.setTrackReads);
 
   // Compute stats
   const stats = useMemo(() => {
@@ -121,6 +123,23 @@ export function ControlPane({ onDiagramChange, activeDiagram = 'system-overview'
             <option key={type} value={type}>{type}</option>
           ))}
         </select>
+      </section>
+
+      {/* Show Reads Toggle */}
+      <section className="control-section">
+        <label className="control-label" htmlFor="track-reads-toggle">Show Reads</label>
+        <div className="control-toggle">
+          <input
+            type="checkbox"
+            id="track-reads-toggle"
+            checked={trackReads}
+            onChange={(e) => setTrackReads(e.target.checked)}
+            title="Show file read events on diagram"
+          />
+          <label htmlFor="track-reads-toggle" className="control-toggle-label">
+            Show file reads on diagram
+          </label>
+        </div>
       </section>
 
       {/* Quick Stats */}

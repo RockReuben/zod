@@ -247,36 +247,6 @@ export function MermaidViewer({
     };
   }, [chart, renderKey, showGrid, gridColor, gridThickness]);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className={`${wrapperClass} loading`} role="status" aria-label="Loading diagram">
-        <div className="mermaid-spinner" />
-        <p>Loading diagram…</p>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className={`${wrapperClass} error`} role="alert" aria-label="Diagram error">
-        <div className="mermaid-error-icon">⚠️</div>
-        <h3>Failed to render diagram</h3>
-        <p className="mermaid-error-message">{error}</p>
-        <button
-          className="mermaid-retry-btn"
-          onClick={() => {
-            renderIdRef.current = 0;
-            renderChart();
-          }}
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
   const wrapperStyles: React.CSSProperties = asBackground
     ? {
         position: 'fixed',

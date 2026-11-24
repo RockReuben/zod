@@ -48,6 +48,7 @@ interface EventsState {
   filters: FilterState;
   replay: ReplayState;
   highlights: NodeHighlight[];
+  trackReads: boolean; // Client-side toggle for showing read highlights
 
   // Message state
   messages: Map<string, InboxMessage[]>;
@@ -85,6 +86,7 @@ interface EventsState {
   removeHighlight: (node: string, agentName: string) => void;
   clearExpiredHighlights: () => void;
   clearAllHighlights: () => void;
+  setTrackReads: (enabled: boolean) => void;
 
   // Message actions
   fetchMessages: (target: string) => Promise<void>;
@@ -130,6 +132,8 @@ const useEventsStore = create<EventsState>((set, get) => ({
   filters: { ...initialFilters },
   replay: { ...initialReplay },
   highlights: [],
+  trackReads: false, // Client-side toggle for showing read highlights
+
   messages: new Map(),
   selectedTarget: 'lead',
   availableTargets: ['lead'],
@@ -140,7 +144,7 @@ const useEventsStore = create<EventsState>((set, get) => ({
   questionsPollingInterval: null,
 
   addEvent: (event: HookEvent) => {
-    const { events, replay } = get();
+    const { events, replay, trackReads } = get();
     // Don't add live events during replay
     if (replay.isReplaying) return;
 
@@ -152,6 +156,10 @@ const useEventsStore = create<EventsState>((set, get) => ({
 
     // Handle node_highlight and node_highlight_read events
     if ((event.event_type === 'node_highlight' || event.event_type === 'node_highlight_read') && event.tool_input) {
+      // Only process node_highlight_read if trackReads is enabled
+      if (event.event_type === 'node_highlight_read' && !trackReads) {
+        return;
+      }
       const { diagram, node } = event.tool_input;
       if (diagram && node) {
         get().addHighlight({
@@ -336,6 +344,10 @@ const useEventsStore = create<EventsState>((set, get) => ({
 
   clearAllHighlights: () => {
     set({ highlights: [] });
+  },
+
+  setTrackReads: (enabled: boolean) => {
+    set({ trackReads: enabled });
   },
 
   // Message actions
