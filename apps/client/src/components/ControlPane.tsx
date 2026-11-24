@@ -18,6 +18,8 @@ export function ControlPane({ onDiagramChange, activeDiagram = 'system-overview'
   const availableFilters = useEventsStore((s) => s.getAvailableFilters());
   const trackReads = useEventsStore((s) => s.trackReads);
   const setTrackReads = useEventsStore((s) => s.setTrackReads);
+  const trackSearches = useEventsStore((s) => s.trackSearches);
+  const setTrackSearches = useEventsStore((s) => s.setTrackSearches);
 
   // Compute stats
   const stats = useMemo(() => {
@@ -138,6 +140,23 @@ export function ControlPane({ onDiagramChange, activeDiagram = 'system-overview'
           />
           <label htmlFor="track-reads-toggle" className="control-toggle-label">
             Show file reads on diagram
+          </label>
+        </div>
+      </section>
+
+      {/* Show Searches Toggle */}
+      <section className="control-section">
+        <label className="control-label" htmlFor="track-searches-toggle">Show Searches</label>
+        <div className="control-toggle">
+          <input
+            type="checkbox"
+            id="track-searches-toggle"
+            checked={trackSearches}
+            onChange={(e) => setTrackSearches(e.target.checked)}
+            title="Show file search events (Grep/Glob) on diagram"
+          />
+          <label htmlFor="track-searches-toggle" className="control-toggle-label">
+            Show file searches on diagram
           </label>
         </div>
       </section>

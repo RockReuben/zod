@@ -12,6 +12,7 @@ export function ChatBox() {
   const fetchMessages = useEventsStore((s) => s.fetchMessages);
   const answerQuestion = useEventsStore((s) => s.answerQuestion);
   const getChatItems = useEventsStore((s) => s.getChatItems);
+  const toggleChatPanel = useEventsStore((s) => s.toggleChatPanel);
 
   const chatItems = useMemo(
     () => getChatItems(selectedTarget),
@@ -78,6 +79,10 @@ export function ChatBox() {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       handleSubmit(event);
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      toggleChatPanel();
     }
   };
 
@@ -370,6 +375,15 @@ function QuestionItem({ question, onAnswerQuestion, time, sessionLabel }: {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       handleAnswerSubmit(event);
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      if (isAnswering) {
+        setIsAnswering(false);
+        setAnswerText('');
+        setError(null);
+      }
+      // Note: ESC to close panel is handled in ChatBox input handler
     }
   };
 

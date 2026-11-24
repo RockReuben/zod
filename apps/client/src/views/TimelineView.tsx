@@ -12,6 +12,7 @@ function getEventColor(eventType: string): string {
     if (eventType === 'diagram_drift') return '#dc2626';
     if (eventType === 'node_highlight') return '#3b82f6'; // blue for writes
     if (eventType === 'node_highlight_read') return '#06b6d4'; // cyan for reads
+    if (eventType === 'node_highlight_search') return '#a855f7'; // purple for searches
   }
   if (eventType.startsWith('Pre')) return '#3b82f6';
   if (eventType.startsWith('Post')) return '#22c55e';

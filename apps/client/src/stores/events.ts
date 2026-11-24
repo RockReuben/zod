@@ -49,6 +49,7 @@ interface EventsState {
   replay: ReplayState;
   highlights: NodeHighlight[];
   trackReads: boolean; // Client-side toggle for showing read highlights
+  trackSearches: boolean; // Client-side toggle for showing search highlights
 
   // Message state
   messages: Map<string, InboxMessage[]>;
@@ -87,6 +88,7 @@ interface EventsState {
   clearExpiredHighlights: () => void;
   clearAllHighlights: () => void;
   setTrackReads: (enabled: boolean) => void;
+  setTrackSearches: (enabled: boolean) => void;
 
   // Message actions
   fetchMessages: (target: string) => Promise<void>;
@@ -133,6 +135,7 @@ const useEventsStore = create<EventsState>((set, get) => ({
   replay: { ...initialReplay },
   highlights: [],
   trackReads: false, // Client-side toggle for showing read highlights
+  trackSearches: false, // Client-side toggle for showing search highlights
 
   messages: new Map(),
   selectedTarget: 'lead',
@@ -144,7 +147,7 @@ const useEventsStore = create<EventsState>((set, get) => ({
   questionsPollingInterval: null,
 
   addEvent: (event: HookEvent) => {
-    const { events, replay, trackReads } = get();
+    const { events, replay, trackReads, trackSearches } = get();
     // Don't add live events during replay
     if (replay.isReplaying) return;
 
@@ -154,10 +157,14 @@ const useEventsStore = create<EventsState>((set, get) => ({
     }
     set({ events: newEvents });
 
-    // Handle node_highlight and node_highlight_read events
-    if ((event.event_type === 'node_highlight' || event.event_type === 'node_highlight_read') && event.tool_input) {
+    // Handle node_highlight, node_highlight_read, and node_highlight_search events
+    if ((event.event_type === 'node_highlight' || event.event_type === 'node_highlight_read' || event.event_type === 'node_highlight_search') && event.tool_input) {
       // Only process node_highlight_read if trackReads is enabled
       if (event.event_type === 'node_highlight_read' && !trackReads) {
+        return;
+      }
+      // Only process node_highlight_search if trackSearches is enabled
+      if (event.event_type === 'node_highlight_search' && !trackSearches) {
         return;
       }
       const { diagram, node } = event.tool_input;
@@ -348,6 +355,10 @@ const useEventsStore = create<EventsState>((set, get) => ({
 
   setTrackReads: (enabled: boolean) => {
     set({ trackReads: enabled });
+  },
+
+  setTrackSearches: (enabled: boolean) => {
+    set({ trackSearches: enabled });
   },
 
   // Message actions

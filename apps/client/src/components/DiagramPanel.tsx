@@ -79,43 +79,45 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
 
     if (highlights.length === 0) return;
 
-    // Get the SVG's ID to construct the mermaid-generated node IDs
-    // Mermaid generates IDs like: {svgId}-flowchart-node-{nodeName}-{index}
-    const svgId = svgEl.id || 'mermaid-svg';
-    const prefix = `${svgId}-flowchart`;
-    // prefix is used in style rules below
-    void prefix;
+    // Build selector list for a single node (matches all Mermaid ID patterns)
+    const buildNodeSelector = (nodeName: string): string => {
+      return `[id$="node-${nodeName}"], [id$="flowchart-node-${nodeName}"], [id$="flowchart-subgraph-${nodeName}"]`;
+    };
 
-    // Build CSS for highlights using the mermaid-generated ID pattern
+    // Build CSS for highlights using the actual Mermaid-generated node ID pattern
     const styleRules = highlights.map((h) => {
-      // Match any element whose ID ends with -flowchart-node-{nodeName}-{number}
-      // Using attribute selector: [id$="suffix"] matches elements whose ID ends with suffix
+      const selector = buildNodeSelector(h.node);
       return `
-        [id$="-flowchart-node-${h.node}-0"],
-        [id$="-flowchart-node-${h.node}-1"],
-        [id$="-flowchart-node-${h.node}-2"],
-        [id$="-flowchart-node-${h.node}-3"],
-        [id$="-flowchart-node-${h.node}-4"],
-        [id$="-flowchart-node-${h.node}-5"] {
+        ${selector} {
           stroke: ${h.color} !important;
-          stroke-width: 3px !important;
-          filter: drop-shadow(0 0 6px ${h.color}) !important;
-          transition: stroke 0.3s, filter 0.3s;
+          stroke-width: 5px !important;
+          filter: drop-shadow(0 0 10px ${h.color}) drop-shadow(0 0 20px ${h.color}) !important;
+          fill: ${h.color}22 !important;
+          transition: stroke 0.3s, filter 0.3s, fill 0.3s;
+          animation: pulse-highlight 1.5s ease-in-out infinite;
         }
-        [id$="-flowchart-node-${h.node}-0"] *,
-        [id$="-flowchart-node-${h.node}-1"] *,
-        [id$="-flowchart-node-${h.node}-2"] *,
-        [id$="-flowchart-node-${h.node}-3"] *,
-        [id$="-flowchart-node-${h.node}-4"] *,
-        [id$="-flowchart-node-${h.node}-5"] * {
+        ${selector} * {
           stroke: ${h.color} !important;
+          stroke-width: 2px !important;
         }
       `;
     }).join('\n');
 
+    // Add keyframes for pulse animation
+    const keyframes = `
+      @keyframes pulse-highlight {
+        0%, 100% {
+          filter: drop-shadow(0 0 10px ${highlights[0].color}) drop-shadow(0 0 20px ${highlights[0].color});
+        }
+        50% {
+          filter: drop-shadow(0 0 20px ${highlights[0].color}) drop-shadow(0 0 40px ${highlights[0].color});
+        }
+      }
+    `;
+
     const styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
     styleElement.setAttribute('data-highlight-style', 'true');
-    styleElement.textContent = styleRules;
+    styleElement.textContent = keyframes + styleRules;
     svgEl.insertBefore(styleElement, svgEl.firstChild);
   }, []);
 

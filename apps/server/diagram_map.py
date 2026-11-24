@@ -243,7 +243,7 @@ def get_file_path_from_tool_input(tool_name: str, tool_input: dict) -> str | Non
     """Extract file path from a tool input dict based on tool name.
 
     Args:
-        tool_name: The tool name (e.g., "Write", "Edit", "MultiEdit", "Read")
+        tool_name: The tool name (e.g., "Write", "Edit", "MultiEdit", "Read", "Grep", "Glob")
         tool_input: The tool input dictionary
 
     Returns:
@@ -254,10 +254,86 @@ def get_file_path_from_tool_input(tool_name: str, tool_input: dict) -> str | Non
         return tool_input.get("file_path")
     elif tool_name == "Read":
         return tool_input.get("file_path")
+    elif tool_name in ("Grep", "Glob"):
+        # Search tools have path/pattern in their input
+        # For Glob: "pattern" field contains the glob pattern (may include path)
+        # For Grep: "path" field specifies the directory to search, "pattern" is the regex
+        # We'll use the path field for Grep, and try to extract a directory from Glob pattern
+        if tool_name == "Grep":
+            return tool_input.get("path")
+        elif tool_name == "Glob":
+            pattern = tool_input.get("pattern", "")
+            # Extract directory from glob pattern (everything before the last /* or /**)
+            # e.g., "apps/server/**/*.py" -> "apps/server"
+            if "**" in pattern:
+                return pattern.split("**")[0].rstrip("/")
+            elif "*" in pattern:
+                # Find the last directory separator before the *
+                last_slash = pattern.rfind("/", 0, pattern.find("*"))
+                if last_slash > 0:
+                    return pattern[:last_slash]
+            return None
     elif tool_name == "Task":
         # Task tool might have file references in description
         return None
     return None
+
+
+def match_directory_to_mappings(dir_path: str, mappings: list[DiagramMapping]) -> list[MappingResult]:
+    """Match a directory path to diagram mappings.
+
+    This is used for search tools (Grep, Glob) where we have a directory
+    rather than a specific file. We check if any mapping glob would match
+    files within this directory.
+
+    Args:
+        dir_path: Relative directory path from repo root (e.g., "apps/server")
+        mappings: List of DiagramMapping entries in file order.
+
+    Returns:
+        List of MappingResult (diagram, node) for matching entries.
+        Returns empty list if no match.
+    """
+    # Normalize path separators
+    dir_path = dir_path.replace("\\", "/")
+
+    matches = []
+    for idx, mapping in enumerate(mappings):
+        # Check if the mapping glob would match files in this directory
+        # Convert mapping glob to see if it's a subdirectory of dir_path or vice versa
+        mapping_glob = mapping.glob
+
+        # Normalize mapping glob
+        mapping_glob = mapping_glob.replace("\\", "/")
+
+        # Check if dir_path is a prefix of the mapping glob's directory part
+        # e.g., dir="apps/server", glob="apps/server/**/*.py" -> match
+        # e.g., dir="apps/server", glob="apps/server/*.py" -> match
+        # e.g., dir="apps", glob="apps/server/**/*.py" -> match (parent directory)
+
+        # Extract the directory part from the mapping glob
+        glob_dir = mapping_glob
+        if "**" in glob_dir:
+            glob_dir = glob_dir.split("**")[0].rstrip("/")
+        elif "*" in glob_dir:
+            last_slash = glob_dir.rfind("/", 0, glob_dir.find("*"))
+            if last_slash > 0:
+                glob_dir = glob_dir[:last_slash]
+
+        # Check if dir_path is a prefix of glob_dir or vice versa
+        if dir_path == glob_dir or dir_path.startswith(glob_dir + "/") or glob_dir.startswith(dir_path + "/"):
+            specificity = glob_specificity(mapping.glob)
+            matches.append((specificity, idx, mapping))
+
+    if not matches:
+        return []
+
+    # Sort by specificity descending, then by file order ascending
+    matches.sort(key=lambda x: (-x[0], x[1]))
+
+    # Return only the single most specific match (first in file order for ties)
+    best_specificity, best_idx, best_mapping = matches[0]
+    return [MappingResult(diagram=best_mapping.diagram, node=best_mapping.node)]
 
 
 if __name__ == "__main__":

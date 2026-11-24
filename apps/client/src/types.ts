@@ -15,10 +15,10 @@ export interface HookEvent {
 }
 
 /** Diagram-related event types */
-export type DiagramEventType = 'unmapped_edit' | 'diagram_drift' | 'node_highlight' | 'node_highlight_read';
+export type DiagramEventType = 'unmapped_edit' | 'diagram_drift' | 'node_highlight' | 'node_highlight_read' | 'node_highlight_search';
 
 export function isDiagramEvent(eventType: string): eventType is DiagramEventType {
-  return eventType === 'unmapped_edit' || eventType === 'diagram_drift' || eventType === 'node_highlight' || eventType === 'node_highlight_read';
+  return eventType === 'unmapped_edit' || eventType === 'diagram_drift' || eventType === 'node_highlight' || eventType === 'node_highlight_read' || eventType === 'node_highlight_search';
 }
 
 /** Node highlight information for diagram visualization */

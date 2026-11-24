@@ -18,6 +18,9 @@ export function ChatPanel() {
     toggleChatPanel();
   });
 
+  // ESC key handling is now done in ChatBox/QuestionItem where the input is focused.
+  // We don't add a document-level handler here to avoid double-toggle.
+
   // Focus chat input when panel opens
   useEffect(() => {
     if (chatPanelOpen) {

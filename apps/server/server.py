@@ -27,6 +27,7 @@ from diagram_map import (
     get_file_path_from_tool_input,
     REPO_ROOT,
     normalize_file_path,
+    match_directory_to_mappings,
 )
 
 # Load .env file if it exists
@@ -52,6 +53,8 @@ PORT = 8081
 TOKEN = os.environ.get("ZOD_TOKEN", "zod-control-center-token")
 # Track file reads (Read tool) for diagram highlights - disabled by default
 TRACK_FILE_READS = os.environ.get("ZOD_TRACK_READS", "false").lower() == "true"
+# Track file searches (Grep, Glob tools) for diagram highlights - disabled by default
+TRACK_FILE_SEARCHES = os.environ.get("ZOD_TRACK_SEARCHES", "false").lower() == "true"
 
 # Paths relative to repo root
 REPO_ROOT = Path(__file__).parent.parent.parent
@@ -150,8 +153,10 @@ async def handle_events(request):
     # Extract fields from payload
     session_id = payload.get("session_id", str(uuid.uuid4()))
     source_app = payload.get("source_app", "unknown")
-    agent_name = payload.get("agent_name", "unknown")
-    event_type = payload.get("type", "unknown")
+    # Map hook fields: hook sends agent_id/agent_type, we use agent_name
+    agent_name = payload.get("agent_name") or payload.get("agent_id") or payload.get("agent_type", "unknown")
+    # Map hook field: hook sends hook_event_name, we use event_type
+    event_type = payload.get("type") or payload.get("hook_event_name", "unknown")
     tool_name = payload.get("tool_name")
     tool_input = payload.get("tool_input", {})
     tool_output = payload.get("tool_output", {})
@@ -228,7 +233,9 @@ async def check_and_emit_diagram_events(
     file_edit_tools = {"Write", "Edit", "MultiEdit"}
     # Also track reads if enabled
     file_read_tools = {"Read"} if TRACK_FILE_READS else set()
-    tracked_tools = file_edit_tools | file_read_tools
+    # Track file search tools (Grep, Glob) if enabled
+    file_search_tools = {"Grep", "Glob"} if TRACK_FILE_SEARCHES else set()
+    tracked_tools = file_edit_tools | file_read_tools | file_search_tools
     if tool_name not in tracked_tools:
         return
 
@@ -243,16 +250,30 @@ async def check_and_emit_diagram_events(
     if not file_path:
         return
 
-    # Check if file is mapped to a diagram node
-    results = resolve_file_path(file_path, REPO_ROOT)
-
     # Determine event type based on tool
     is_read = tool_name == "Read"
-    highlight_event_type = "node_highlight_read" if is_read else "node_highlight"
+    is_search = tool_name in ("Grep", "Glob")
+    if is_search:
+        highlight_event_type = "node_highlight_search"
+    elif is_read:
+        highlight_event_type = "node_highlight_read"
+    else:
+        highlight_event_type = "node_highlight"
+
+    if is_search:
+        # For search tools, use directory matching
+        # Load mappings and match the directory
+        map_path = REPO_ROOT / "diagram-map.yaml"
+        from diagram_map import load_mappings
+        mappings = load_mappings(map_path)
+        results = match_directory_to_mappings(file_path, mappings)
+    else:
+        # For read/write tools, use file path matching
+        results = resolve_file_path(file_path, REPO_ROOT)
 
     if not results:
         # No mapping found - emit unmapped_edit event (only for writes)
-        if not is_read:
+        if not is_read and not is_search:
             await emit_diagram_event(
                 session_id=session_id,
                 source_app=source_app,
@@ -263,8 +284,8 @@ async def check_and_emit_diagram_events(
                 tool_output={},
             )
     else:
-        # File is mapped - check for diagram drift (only for writes)
-        if not is_read:
+        # File/directory is mapped - check for diagram drift (only for writes)
+        if not is_read and not is_search:
             drift_warnings = check_diagram_drift(file_path, REPO_ROOT)
             for drift in drift_warnings:
                 await emit_diagram_event(
