@@ -54,6 +54,86 @@ if ENV_PATH.exists():
                 value = value.strip().strip('"').strip("'")
                 os.environ.setdefault(key, value)
 
+
+def parse_plan_assumptions(plan_markdown: str) -> dict:
+    """
+    Parse plan.md and extract assumptions and open questions.
+
+    Returns: { "assumptions": [...], "open_questions": [...] }
+    Each item: { "id": str, "text": str, "line_number": int }
+    """
+    result = {"assumptions": [], "open_questions": []}
+
+    if not plan_markdown:
+        return result
+
+    lines = plan_markdown.split("\n")
+    current_section = None
+    assumption_count = 0
+    question_count = 0
+
+    for line_num, line in enumerate(lines, 1):
+        stripped = line.strip()
+
+        # Check for section headers
+        if stripped == "## Assumptions":
+            current_section = "assumptions"
+            continue
+        elif stripped == "## Open Questions":
+            current_section = "open_questions"
+            continue
+        elif stripped.startswith("## ") and current_section is not None:
+            # New section, stop collecting
+            current_section = None
+            continue
+
+        # Collect items from the current section
+        if current_section == "assumptions" and (stripped.startswith("-") or re.match(r"^\d+\.\s", stripped)):
+            text = re.sub(r"^[-*]\s*|\d+\.\s*", "", stripped)
+            if text:
+                result["assumptions"].append({
+                    "id": f"assumption-{assumption_count}",
+                    "text": text,
+                    "line_number": line_num
+                })
+                assumption_count += 1
+        elif current_section == "open_questions" and (stripped.startswith("-") or re.match(r"^\d+\.\s", stripped)):
+            text = re.sub(r"^[-*]\s*|\d+\.\s*", "", stripped)
+            if text:
+                result["open_questions"].append({
+                    "id": f"question-{question_count}",
+                    "text": text,
+                    "line_number": line_num
+                })
+                question_count += 1
+
+    return result
+
+
+def load_plan_markdown(plan_name: str) -> str:
+    """
+    Load plan.md from docs/plans/<plan_name>/plan.md
+
+    Returns the markdown content as string.
+    Raises FileNotFoundError if plan doesn't exist.
+    """
+    # Validate plan name to prevent path traversal
+    if ".." in plan_name or "/" in plan_name or "\\" in plan_name:
+        raise FileNotFoundError("Invalid plan name")
+
+    plan_path = REPO_ROOT / "docs" / "plans" / plan_name / "plan.md"
+
+    # Additional safety: ensure resolved path is under docs/plans
+    try:
+        plan_path.resolve().relative_to((REPO_ROOT / "docs" / "plans").resolve())
+    except ValueError:
+        raise FileNotFoundError("Invalid plan name")
+
+    if not plan_path.exists():
+        raise FileNotFoundError(f"Plan '{plan_name}' not found")
+
+    return plan_path.read_text(encoding="utf-8")
+
 # Configuration
 HOST = "127.0.0.1"
 PORT = 8081
@@ -803,6 +883,77 @@ async def handle_get_questions(request):
     return web.json_response({"questions": questions}, status=200)
 
 
+async def handle_get_plan_assumptions(request):
+    """GET /plans/:name/assumptions endpoint - get assumptions and open questions from plan.md."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    plan_name = request.match_info.get("name", "")
+
+    try:
+        plan_markdown = load_plan_markdown(plan_name)
+    except FileNotFoundError as e:
+        return web.json_response({"error": str(e)}, status=404)
+
+    assumptions = parse_plan_assumptions(plan_markdown)
+
+    return web.json_response(assumptions, status=200)
+
+
+async def handle_post_plan_reply(request):
+    """POST /plans/:name/reply endpoint - send reply to planner agent.
+
+    Body: { "itemId": string, "itemType": "assumption" | "question", "reply": string }
+
+    Forwards the reply to the planner agent for iterative refinement.
+    """
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    plan_name = request.match_info.get("name", "")
+
+    # Validate plan exists
+    try:
+        load_plan_markdown(plan_name)
+    except FileNotFoundError as e:
+        return web.json_response({"error": str(e)}, status=404)
+
+    try:
+        payload = await request.json()
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+
+    item_id = payload.get("itemId")
+    item_type = payload.get("itemType")
+    reply = payload.get("reply")
+
+    if not item_id:
+        return web.json_response({"error": "itemId is required"}, status=400)
+
+    if item_type not in ("assumption", "question"):
+        return web.json_response({"error": "itemType must be 'assumption' or 'question'"}, status=400)
+
+    if not reply:
+        return web.json_response({"error": "reply is required"}, status=400)
+
+    # In a full implementation, this would forward to the planner agent
+    # via Agent SDK or a message queue. For now, we acknowledge receipt.
+    # The planner agent can poll for replies or be notified via WebSocket.
+
+    # Broadcast the reply event to WebSocket clients (for planner agent)
+    event_data = {
+        "type": "plan_reply",
+        "plan_name": plan_name,
+        "item_id": item_id,
+        "item_type": item_type,
+        "reply": reply,
+        "timestamp": time.time(),
+    }
+    asyncio.create_task(broadcast_event(event_data))
+
+    return web.json_response({"status": "reply_received"}, status=200)
+
+
 async def handle_get_diagrams(request):
     """GET /diagrams/:name endpoint - return diagram file."""
     if not check_auth(request):
@@ -1021,6 +1172,9 @@ def create_app():
     app.router.add_get("/code-graph", handle_get_code_graph)
     app.router.add_get("/code-graph/fingerprint", handle_get_code_graph_fingerprint)
     ws_code_graph_route = app.router.add_get("/ws/code-graph", code_graph_websocket_handler)
+    # Plan endpoints (P6.4)
+    app.router.add_get("/plans/{name}/assumptions", handle_get_plan_assumptions)
+    app.router.add_post("/plans/{name}/reply", handle_post_plan_reply)
 
     # CORS middleware - manual implementation to avoid aiohttp_cors conflicts with WebSocket
     # aiohttp_cors adds a global on_response_prepare that conflicts with WebSocketResponse

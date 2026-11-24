@@ -131,6 +131,33 @@ export interface PlanInfo {
   hasProposedDiagram: boolean;
 }
 
+/** Plan assumption from plan.md */
+export interface PlanAssumption {
+  id: string;
+  text: string;
+  lineNumber: number;
+}
+
+/** Plan open question from plan.md */
+export interface PlanQuestion {
+  id: string;
+  text: string;
+  lineNumber: number;
+}
+
+/** Combined plan assumptions and questions */
+export interface PlanAssumptions {
+  assumptions: PlanAssumption[];
+  openQuestions: PlanQuestion[];
+}
+
+/** Plan reply payload */
+export interface PlanReply {
+  itemId: string;
+  itemType: 'assumption' | 'question';
+  reply: string;
+}
+
 /** Speech Recognition API types (webkitSpeechRecognition / SpeechRecognition) */
 export interface SpeechRecognition extends EventTarget {
   continuous: boolean;

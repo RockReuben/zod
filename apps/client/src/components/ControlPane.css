@@ -242,6 +242,14 @@
   background: var(--text-muted, #888);
 }
 
+/* Assumptions Section Wrapper */
+.assumptions-section-wrapper {
+  flex: 1;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Mobile responsive */
 @media (max-width: 1024px) {
   .control-pane {

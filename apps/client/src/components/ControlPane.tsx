@@ -2,6 +2,7 @@ import { useMemo, useEffect } from 'react';
 import { useEventsStore } from '../stores/events';
 import { useEventStream } from '../hooks/useEventStream';
 import { ConnectionStatus, DiffMode } from '../types';
+import { AssumptionsPanel } from './AssumptionsPanel';
 import './ControlPane.css';
 
 interface ControlPaneProps {
@@ -255,6 +256,13 @@ export function ControlPane({ onDiagramChange, activeDiagram = 'system-overview'
           Reset Filters
         </button>
       </section>
+
+      {/* Plan Assumptions Panel */}
+      {planDiff.activePlan && (
+        <section className="control-section assumptions-section-wrapper">
+          <AssumptionsPanel planName={planDiff.activePlan} />
+        </section>
+      )}
     </div>
   );
 }

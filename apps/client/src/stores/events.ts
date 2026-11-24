@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { HookEvent, SessionLane, NodeHighlight, InboxMessage, QuestionMessage, ChatItem, PlanInfo, DiffMode } from '../types';
+import { HookEvent, SessionLane, NodeHighlight, InboxMessage, QuestionMessage, ChatItem, PlanInfo, DiffMode, PlanAssumptions, PlanReply } from '../types';
 import { getAgentColor } from '../utils/agentColors';
 
 const MAX_EVENTS = 1000;
@@ -79,6 +79,11 @@ interface EventsState {
   // Plan diff state
   planDiff: PlanDiffState;
 
+  // Plan assumptions state (P6.4)
+  planAssumptions: PlanAssumptions | null;
+  planAssumptionsLoading: boolean;
+  planAssumptionsError: string | null;
+
   addEvent: (event: HookEvent) => void;
   setFilter: (key: keyof FilterState, value: string) => void;
   resetFilters: () => void;
@@ -142,6 +147,11 @@ interface EventsState {
   setCurrentDiagram: (diagram: string) => void;
   setProposedDiagram: (diagram: string) => void;
   setLoadingProposed: (loading: boolean) => void;
+
+  // Plan assumptions actions (P6.4)
+  fetchPlanAssumptions: (planName: string) => Promise<void>;
+  sendPlanReply: (planName: string, reply: PlanReply) => Promise<void>;
+  clearPlanAssumptions: () => void;
 }
 
 const initialFilters: FilterState = {
@@ -186,6 +196,11 @@ const useEventsStore = create<EventsState>((set, get) => ({
   questionsPollingInterval: null,
 
   planDiff: { ...initialPlanDiff },
+
+  // Plan assumptions state (P6.4)
+  planAssumptions: null,
+  planAssumptionsLoading: false,
+  planAssumptionsError: null,
 
   addEvent: (event: HookEvent) => {
     const { events, replay, trackReads, trackSearches } = get();
@@ -628,6 +643,46 @@ const useEventsStore = create<EventsState>((set, get) => ({
     set((state) => ({
       planDiff: { ...state.planDiff, isLoadingProposed: loading },
     }));
+  },
+
+  // Plan assumptions actions (P6.4)
+  fetchPlanAssumptions: async (planName: string) => {
+    set({ planAssumptionsLoading: true, planAssumptionsError: null });
+    try {
+      const response = await fetch(`${API_BASE}/plans/${encodeURIComponent(planName)}/assumptions`, {
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to load assumptions' }));
+        throw new Error(error.error || 'Failed to load assumptions');
+      }
+      const data = await response.json();
+      set({ planAssumptions: data, planAssumptionsLoading: false });
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      set({ planAssumptionsError: errorMessage, planAssumptionsLoading: false });
+    }
+  },
+
+  sendPlanReply: async (planName: string, reply: PlanReply) => {
+    const response = await fetch(`${API_BASE}/plans/${encodeURIComponent(planName)}/reply`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(reply),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to send reply' }));
+      throw new Error(error.error || 'Failed to send reply');
+    }
+    // Optionally refresh assumptions after reply
+    // get().fetchPlanAssumptions(planName);
+  },
+
+  clearPlanAssumptions: () => {
+    set({ planAssumptions: null, planAssumptionsError: null });
   },
 
   // Chat items selector - merges messages and questions for a target
