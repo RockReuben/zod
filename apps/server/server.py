@@ -30,6 +30,13 @@ from diagram_map import (
     match_directory_to_mappings,
 )
 
+from code_graph import (
+    get_code_graph,
+    initialize_code_graph,
+    shutdown_code_graph,
+    GraphDelta,
+)
+
 # Load .env file if it exists
 ENV_PATH = Path(__file__).parent.parent.parent / ".env"
 if ENV_PATH.exists():
@@ -825,6 +832,24 @@ async def handle_get_diagrams(request):
         return web.json_response({"error": str(e)}, status=500)
 
 
+async def handle_get_code_graph(request):
+    """GET /code-graph endpoint - return full code graph snapshot."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    graph = get_code_graph()
+    return web.json_response(graph.to_dict())
+
+
+async def handle_get_code_graph_fingerprint(request):
+    """GET /code-graph/fingerprint endpoint - return just the fingerprint."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    graph = get_code_graph()
+    return web.json_response({"fingerprint": graph.fingerprint})
+
+
 connected_clients: set = set()
 
 
@@ -842,6 +867,10 @@ async def broadcast_event(event_data: dict):
             disconnected.add(ws)
 
     connected_clients.difference_update(disconnected)
+
+
+# Code Graph WebSocket clients
+code_graph_clients: set = set()
 
 
 async def websocket_handler(request):
@@ -867,8 +896,72 @@ async def websocket_handler(request):
     return ws
 
 
+async def code_graph_websocket_handler(request):
+    """WebSocket handler for code graph real-time updates."""
+    if not check_auth(request):
+        return web.json_response({"error": "Unauthorized"}, status=401)
+
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+    code_graph_clients.add(ws)
+
+    graph = get_code_graph()
+
+    # Send initial snapshot
+    snapshot = graph.to_dict()
+    try:
+        await ws.send_str(json.dumps({"type": "graph_snapshot", **snapshot}))
+    except Exception:
+        pass
+
+    # Register delta callback for this client
+    async def on_delta(delta: GraphDelta):
+        try:
+            await ws.send_str(json.dumps({"type": "graph_delta", **delta.to_dict()}))
+        except Exception:
+            pass
+
+    graph.on_delta(on_delta)
+
+    try:
+        async for msg in ws:
+            if msg.type == web.WSMsgType.TEXT:
+                if msg.data == "close":
+                    break
+                # Handle client messages (e.g., fingerprint check)
+                try:
+                    data = json.loads(msg.data)
+                    if data.get("type") == "fingerprint_check":
+                        client_fp = data.get("fingerprint")
+                        server_fp = graph.fingerprint
+                        if client_fp != server_fp:
+                            await ws.send_str(json.dumps({
+                                "type": "graph_fingerprint",
+                                "fingerprint": server_fp,
+                            }))
+                except json.JSONDecodeError:
+                    pass
+            elif msg.type == web.WSMsgType.ERROR:
+                break
+    except Exception:
+        pass
+    finally:
+        code_graph_clients.discard(ws)
+        # Remove delta callback to prevent memory leak
+        try:
+            graph._delta_callbacks.remove(on_delta)
+        except ValueError:
+            pass
+        await ws.close()
+
+    return ws
+
+
 async def main():
     """Start the event server."""
+    # Initialize code graph (scan + watcher)
+    await initialize_code_graph()
+
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, HOST, PORT)
@@ -876,6 +969,7 @@ async def main():
 
     print(f"🛰️  Zod Control Center server running at http://{HOST}:{PORT}")
     print(f"📡 WebSocket endpoint: ws://{HOST}:{PORT}/ws")
+    print(f"📊 Code Graph WS: ws://{HOST}:{PORT}/ws/code-graph")
     print(f"🔐 Token: {TOKEN[:8]}... (truncated)")
     print(f"🗄️  Database: {DATABASE_PATH}")
 
@@ -885,6 +979,7 @@ async def main():
     except asyncio.CancelledError:
         pass
     finally:
+        await shutdown_code_graph()
         await runner.cleanup()
 
 
@@ -903,6 +998,10 @@ def create_app():
     app.router.add_post("/questions/{id}/answer", handle_post_question_answer)
     app.router.add_get("/diagrams/{name}", handle_get_diagrams)
     app.router.add_get("/ws", websocket_handler)
+    # Code Graph endpoints
+    app.router.add_get("/code-graph", handle_get_code_graph)
+    app.router.add_get("/code-graph/fingerprint", handle_get_code_graph_fingerprint)
+    app.router.add_get("/ws/code-graph", code_graph_websocket_handler)
 
     # Configure CORS for the client at localhost:5173
     cors = aiohttp_cors.setup(

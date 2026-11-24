@@ -749,4 +749,12 @@ function buildLanesFromEvents(events: HookEvent[]): SessionLane[] {
   });
 }
 
+// Selector for reduced motion (standalone export)
+export const selectReducedMotion = (state: ReturnType<typeof useEventsStore.getState>) => {
+  const { motionSetting } = state;
+  const prefersReduced = typeof window !== 'undefined' &&
+    window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return motionSetting === 'reduced' || motionSetting === 'off' || prefersReduced;
+};
+
 export { useEventsStore };

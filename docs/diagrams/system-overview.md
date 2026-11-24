@@ -30,7 +30,12 @@ GET /diagrams/:name
 GET /events
 (historical)
 GET /sessions
-(list)"]
+(list)
+GET /code-graph
+GET /code-graph/fingerprint
+WS /ws/code-graph
+Code Graph Engine
+(code_graph.py)"]
     end
 
     subgraph Client["Web UI (apps/client)"]
@@ -38,6 +43,10 @@ GET /sessions
 + Filter Bar
 Replay Controls
 (Session Selector, Speed, Progress)"]
+        node-codebase["Codebase View
+Gource Tree Canvas
+Agent Avatars
+Activity Effects"]
     end
 
     subgraph Database["Database"]
@@ -64,6 +73,9 @@ HTTP POST| node-hooks
     node-database --> node-server
     node-server -.->|WebSocket
 Event Stream| node-client
+    node-server -.->|WS /ws/code-graph
+Graph Delta| node-codebase
+    node-client -->|GET /code-graph| node-server
 
     node-client -->|POST /messages| node-server
     node-server --> node-database
@@ -80,6 +92,7 @@ Reads Inbox| node-check_inbox
     classDef hook fill:#fff3e0,stroke:#f57c00,color:#f57c00;
     classDef server fill:#e8f5e9,stroke:#2e7d32,color:#2e7d32;
     classDef client fill:#f3e5f5,stroke:#7b1fa2,color:#7b1fa2;
+    classDef codebase fill:#fef3c7,stroke:#f59e0b,color:#92400e;
     classDef database fill:#fce4ec,stroke:#c2185b,color:#c2185b;
     classDef repo fill:#fafafa,stroke:#757575,color:#757575;
 
@@ -87,6 +100,7 @@ Reads Inbox| node-check_inbox
     class node-hooks,node-check_inbox hook;
     class node-server server;
     class node-client client;
+    class node-codebase codebase;
     class node-database database;
     class node-planning repo;
 ```
@@ -96,4 +110,5 @@ Reads Inbox| node-check_inbox
 - `server` - Event server (node-server)
 - `database` - SQLite database (node-database)
 - `client` - Web UI client (node-client)
+- `codebase` - Codebase view components (node-codebase)
 - `planning` - Repository planning files (node-planning)

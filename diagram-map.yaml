@@ -21,3 +21,23 @@
 - glob: "docs/plans/**"
   diagram: "docs/diagrams/system-overview.md"
   node: "planning"
+
+- glob: "apps/server/code_graph.py"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "codebase"
+
+- glob: "apps/client/src/views/CodebaseView.tsx"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "codebase"
+
+- glob: "apps/client/src/components/CodebaseCanvas.tsx"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "codebase"
+
+- glob: "apps/client/src/stores/codeGraph.ts"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "codebase"
+
+- glob: "apps/client/src/hooks/useCodeGraph.ts"
+  diagram: "docs/diagrams/system-overview.md"
+  node: "codebase"
