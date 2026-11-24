@@ -306,7 +306,6 @@ export function useMermaidRenderer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const panZoomRef = useRef<ReturnType<typeof svgPanZoom> | null>(null);
   const renderIdRef = useRef(0);
-  const isMountedRef = useRef(true);
 
   const render = async (chart: string) => {
     if (!containerRef.current || !chart.trim()) return;
@@ -317,11 +316,11 @@ export function useMermaidRenderer() {
 
     try {
       await document.fonts.ready;
-      if (!isMountedRef.current || currentRenderId !== renderIdRef.current) return;
+      if (currentRenderId !== renderIdRef.current) return;
 
       const { svg } = await mermaid.render(`mermaid-${Date.now()}-${currentRenderId}`, chart);
 
-      if (!isMountedRef.current || currentRenderId !== renderIdRef.current) return;
+      if (currentRenderId !== renderIdRef.current) return;
       if (!containerRef.current) return;
 
       containerRef.current.innerHTML = svg;
@@ -345,11 +344,11 @@ export function useMermaidRenderer() {
         maxZoom: 10,
       });
     } catch (err) {
-      if (!isMountedRef.current || currentRenderId !== renderIdRef.current) return;
+      if (currentRenderId !== renderIdRef.current) return;
       const errorMessage = err instanceof Error ? err.message : 'Failed to render diagram';
       setError(errorMessage);
     } finally {
-      if (isMountedRef.current && currentRenderId === renderIdRef.current) {
+      if (currentRenderId === renderIdRef.current) {
         setIsLoading(false);
       }
     }
