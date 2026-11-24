@@ -58,6 +58,7 @@ export const DIFF_COLORS = {
 /**
  * Parse a Mermaid flowchart diagram and extract nodes and edges.
  * Supports basic flowchart TD syntax with subgraphs.
+ * Node IDs can contain letters, digits, underscores, hyphens, and dots.
  */
 export function parseMermaidNodes(mermaidSource: string): ParsedDiagram {
   const nodes = new Map<string, NodeInfo>();
@@ -74,17 +75,70 @@ export function parseMermaidNodes(mermaidSource: string): ParsedDiagram {
   let currentSubgraph = 'root';
   const subgraphStack: string[] = ['root'];
 
-  // Split into lines and process
-  const lines = source.split('\n');
+  // Regex patterns for node IDs (allow hyphens, underscores, dots)
+  // \w = [a-zA-Z0-9_], so we need [a-zA-Z0-9_\-.] for hyphens and dots
+  const NODE_ID = '[a-zA-Z0-9_\\-.]+';
+  const NODE_ID_CAPTURE = '(' + NODE_ID + ')';
+
+  // First pass: join multiline statements
+  // A node/edge definition can span multiple lines if the label contains newlines
+  // We'll scan through the source and join lines that are part of the same statement
+  const rawLines = source.split('\n');
+  const lines: string[] = [];
+  let continuationBuffer = '';
+
+  for (const rawLine of rawLines) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('%%')) continue;
+
+    continuationBuffer += (continuationBuffer ? '\n' : '') + line;
+
+    // Check if this is a subgraph start/end or classDef - always single line
+    const isSubgraphStart = /^subgraph\s+/.test(line);
+    const isSubgraphEnd = line === 'end';
+    const isClassDef = /^class(Def)?\s+/.test(line);
+    const isCompleteStatement = isSubgraphStart || isSubgraphEnd || isClassDef;
+
+    // Check if buffer contains a complete node definition (has closing bracket/paren)
+    // For nodes with multiline labels, the closing bracket might be on a later line
+    const hasOpeningBracket = /[\[\(\(]/.test(continuationBuffer);
+    const hasClosingBracket = /[\]\)\)]/.test(continuationBuffer);
+
+    // Check if buffer contains a complete edge definition
+    // Edge: source --> target (possibly with |label| or : label)
+    // The edge ends with the target node ID (word with allowed chars)
+    // Check if buffer contains a complete edge definition
+    // Edge: source --> target (possibly with |label| or : label)
+    // The edge ends with the target node ID (word with allowed chars)
+    // Must also account for pipe labels |...| which can span multiple lines
+    const hasOpenPipe = continuationBuffer.includes('|') && (continuationBuffer.match(/\|/g) || []).length % 2 === 1;
+    const hasEdge = /[\w\-\.]+\s*[-.=]+>\s*([\w\-\.]+|(\|.*\|)\s*[\w\-\.]+)/.test(continuationBuffer);
+
+    // A statement is complete if:
+    // 1. It's a subgraph/class statement (always single line)
+    // 2. It's a node definition that has both opening and closing brackets
+    // 3. It's an edge definition - but for edges with pipe labels, need closing |
+    const isNodeComplete = hasOpeningBracket && hasClosingBracket;
+    const isEdgeComplete = hasEdge && !hasOpenPipe;
+    const isComplete = isCompleteStatement || isNodeComplete || isEdgeComplete;
+
+    if (isComplete) {
+      lines.push(continuationBuffer.trim());
+      continuationBuffer = '';
+    }
+  }
+
+  // Flush any remaining buffer
+  if (continuationBuffer.trim()) {
+    lines.push(continuationBuffer.trim());
+  }
 
   for (const line of lines) {
     const trimmed = line.trim();
-
-    // Skip empty lines and comments
     if (!trimmed || trimmed.startsWith('%%')) continue;
 
     // Handle subgraph start: `subgraph Name["Label"]`
-    const subgraphStartMatch = trimmed.match(/^subgraph\s+(\w+)\s*\[["']?([^"'\]]+)["']?\]/);
+    const subgraphStartMatch = trimmed.match(new RegExp(`^subgraph\\s+${NODE_ID_CAPTURE}\\s*\\[["']?([^"'\]]+)["']?\\]`));
     if (subgraphStartMatch) {
       currentSubgraph = subgraphStartMatch[1];
       subgraphStack.push(currentSubgraph);
@@ -104,33 +158,50 @@ export function parseMermaidNodes(mermaidSource: string): ParsedDiagram {
     }
 
     // Handle node definitions with labels: `id["Label"]` or `id[Label]` or `id("Label")` or `id((Label))`
-    const nodeMatch = trimmed.match(/^(\w+)\s*([\[\(\(]).*?([\]\)\)])/);
-    if (nodeMatch) {
-      const nodeId = nodeMatch[1];
-      // Extract label between brackets/parentheses
-      const labelMatch = trimmed.match(/[\[\(\(](.*?)[\]\)\)]/);
-      const label = labelMatch ? labelMatch[1].replace(/\\n/g, '\n') : nodeId;
+    // Use a simpler regex that matches the node ID at start of line, followed by bracket/paren
+    const nodeIdMatch = trimmed.match(new RegExp(`^(${NODE_ID})\\s*[\\[\(\(]`));
+    if (nodeIdMatch) {
+      const nodeId = nodeIdMatch[1];
+      // Extract label between first bracket/paren and matching closing bracket/paren
+      // Find the first opening bracket/paren
+      const firstBracket = trimmed.search(/[\[\(\(]/);
+      if (firstBracket >= 0) {
+        const closingBracket = trimmed.search(/[\]\)\)]/);
+        if (closingBracket > firstBracket) {
+          const label = trimmed.substring(firstBracket + 1, closingBracket).replace(/\\n/g, '\n');
 
-      // Determine shape from brackets
-      let shape = 'rect';
-      if (trimmed.includes('((')) shape = 'circle';
-      else if (trimmed.includes('(')) shape = 'rounded';
-      else if (trimmed.includes('[[')) shape = 'subroutine';
-      else if (trimmed.includes('[(')) shape = 'cylindrical';
+          // Determine shape from brackets
+          let shape = 'rect';
+          const bracketPart = trimmed.substring(firstBracket, closingBracket + 1);
+          if (bracketPart.startsWith('((')) shape = 'circle';
+          else if (bracketPart.startsWith('(')) shape = 'rounded';
+          else if (bracketPart.startsWith('[[')) shape = 'subroutine';
+          else if (bracketPart.startsWith('[(')) shape = 'cylindrical';
 
+          const logicalId = getLogicalNodeId(nodeId);
+          nodes.set(logicalId, {
+            id: logicalId,
+            label,
+            subgraph: currentSubgraph,
+            shape,
+          });
+          continue;
+        }
+      }
+      // Fallback if no label found
       const logicalId = getLogicalNodeId(nodeId);
       nodes.set(logicalId, {
         id: logicalId,
-        label,
+        label: nodeId,
         subgraph: currentSubgraph,
-        shape,
+        shape: 'rect',
       });
       continue;
     }
 
     // Handle edges: `A --> B` or `A -.-> B` or `A ==> B` etc.
     // Also handle labeled edges: `A -->|label| B`
-    const edgeMatch = trimmed.match(/^(\w+)\s*([-.=]+>)\s*(\|.*?\|)?\s*(\w+)/);
+    const edgeMatch = trimmed.match(new RegExp(`^(${NODE_ID})\\s*([-.=]+>)\\s*(\\|.*?\\|)?\\s*(${NODE_ID})`));
     if (edgeMatch) {
       const [, source, style, labelPart, target] = edgeMatch;
       const label = labelPart ? labelPart.slice(1, -1) : undefined;
@@ -139,7 +210,7 @@ export function parseMermaidNodes(mermaidSource: string): ParsedDiagram {
     }
 
     // Handle edges with colon label: `A --> B : label`
-    const edgeColonMatch = trimmed.match(/^(\w+)\s*([-.=]+>)\s*(\w+)\s*:\s*(.+)$/);
+    const edgeColonMatch = trimmed.match(new RegExp(`^(${NODE_ID})\\s*([-.=]+>)\\s*(${NODE_ID})\\s*:\\s*(.+)$`));
     if (edgeColonMatch) {
       const [, source, style, target, label] = edgeColonMatch;
       edges.push({ source: getLogicalNodeId(source), target: getLogicalNodeId(target), label, style });
@@ -309,10 +380,10 @@ export function renderPlanDiff(currentDiagram: string, proposedDiagram: string):
   }
 
   // Render subgraphs
-  for (const [subgraphId, nodes] of subgraphNodes) {
+  for (const [subgraphId, nodesInSubgraph] of subgraphNodes) {
     if (subgraphId === 'root') {
       // Nodes without subgraph
-      for (const [id, node] of nodes) {
+      for (const [id, node] of nodesInSubgraph) {
         output += `    ${id}["${escapeLabel(node.label)}"]\n`;
       }
     } else {
@@ -321,7 +392,7 @@ export function renderPlanDiff(currentDiagram: string, proposedDiagram: string):
         || findSubgraphLabel(currentDiagram, subgraphId)
         || subgraphId;
       output += `    subgraph ${subgraphId}["${subgraphLabel}"]\n`;
-      for (const [id, node] of nodes) {
+      for (const [id, node] of nodesInSubgraph) {
         output += `      ${id}["${escapeLabel(node.label)}"]\n`;
       }
       output += `    end\n`;
