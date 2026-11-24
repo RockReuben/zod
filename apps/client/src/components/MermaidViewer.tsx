@@ -293,8 +293,14 @@ export function MermaidViewer({
   const containerStyles: React.CSSProperties = {
     width: '100%',
     height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
   };
 
+  // Always render the container - never early return for loading/error
+  // This ensures refs are always attached
   return (
     <div
       className={wrapperClass}
