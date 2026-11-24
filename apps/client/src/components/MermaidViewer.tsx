@@ -49,6 +49,7 @@ export function MermaidViewer({
 }: MermaidViewerProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const svgContainerRef = useRef<HTMLDivElement>(null); // Dedicated ref for SVG (React doesn't manage children)
   const panZoomRef = useRef<ReturnType<typeof svgPanZoom> | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const renderIdRef = useRef(0);
@@ -187,25 +188,25 @@ export function MermaidViewer({
         return;
       }
 
-      if (!containerRef.current) {
-        console.log('[MermaidViewer] Early return - containerRef.current is null');
+      if (!svgContainerRef.current) {
+        console.log('[MermaidViewer] Early return - svgContainerRef.current is null');
         return;
       }
 
-      // Inject SVG
-      containerRef.current.innerHTML = svg;
+      // Inject SVG into dedicated container (not managed by React)
+      svgContainerRef.current.innerHTML = svg;
       console.log('[MermaidViewer] SVG injected into container');
-      console.log('[MermaidViewer] Container innerHTML length:', containerRef.current.innerHTML.length);
+      console.log('[MermaidViewer] Container innerHTML length:', svgContainerRef.current.innerHTML.length);
 
       // Get the rendered SVG element
-      const svgEl = containerRef.current.querySelector('svg');
+      const svgEl = svgContainerRef.current.querySelector('svg');
       console.log('[MermaidViewer] SVG element found:', !!svgEl);
       if (svgEl) {
         console.log('[MermaidViewer] SVG element:', svgEl.tagName, svgEl.id, svgEl.getAttribute('width'), svgEl.getAttribute('height'));
         console.log('[MermaidViewer] SVG viewBox:', svgEl.getAttribute('viewBox'));
         console.log('[MermaidViewer] SVG style:', svgEl.style.cssText);
       } else {
-        console.log('[MermaidViewer] Container innerHTML preview:', containerRef.current.innerHTML.slice(0, 200));
+        console.log('[MermaidViewer] Container innerHTML preview:', svgContainerRef.current.innerHTML.slice(0, 200));
       }
       if (!svgEl) {
         throw new Error('Mermaid did not produce an SVG element');
@@ -294,7 +295,31 @@ export function MermaidViewer({
       ref={wrapperRef}
       style={wrapperStyles}
     >
-      <div className={containerClass} ref={containerRef} style={containerStyles} data-testid={testId} />
+      <div className={containerClass} ref={containerRef} style={containerStyles} data-testid={testId}>
+        <div ref={svgContainerRef} style={{ width: '100%', height: '100%' }} />
+        {isLoading && (
+          <div role="status" aria-label="Loading diagram" className="mermaid-loading">
+            <div className="mermaid-spinner" />
+            <p>Loading diagram…</p>
+          </div>
+        )}
+        {error && (
+          <div role="alert" aria-label="Diagram error" className="mermaid-error">
+            <div className="mermaid-error-icon">⚠️</div>
+            <h3>Failed to render diagram</h3>
+            <p className="mermaid-error-message">{error}</p>
+            <button
+              className="mermaid-retry-btn"
+              onClick={() => {
+                renderIdRef.current = 0;
+                renderChart();
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
