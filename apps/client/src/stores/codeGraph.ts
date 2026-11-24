@@ -160,9 +160,28 @@ export const selectSyncStatus = (state: CodeGraphState) => state.syncStatus;
 export const selectMode = (state: CodeGraphState) => state.selectedMode;
 export const selectIsConnected = (state: CodeGraphState) => state.isConnected;
 
-// Get nodes as array for rendering
-export const selectNodesArray = (state: CodeGraphState) => Array.from(state.nodes.values());
-export const selectEdgesArray = (state: CodeGraphState) => Array.from(state.edges.values());
+// Get nodes as array for rendering (stable reference via cache)
+let nodesArrayCache: CodeNode[] | null = null;
+let nodesMapCache: Map<string, CodeNode> | null = null;
+
+export const selectNodesArray = (state: CodeGraphState) => {
+  if (nodesMapCache !== state.nodes) {
+    nodesMapCache = state.nodes;
+    nodesArrayCache = Array.from(state.nodes.values());
+  }
+  return nodesArrayCache!;
+};
+
+let edgesArrayCache: CodeEdge[] | null = null;
+let edgesMapCache: Map<string, CodeEdge> | null = null;
+
+export const selectEdgesArray = (state: CodeGraphState) => {
+  if (edgesMapCache !== state.edges) {
+    edgesMapCache = state.edges;
+    edgesArrayCache = Array.from(state.edges.values());
+  }
+  return edgesArrayCache!;
+};
 
 // Get only file nodes (for leaf rendering)
 export const selectFileNodes = (state: CodeGraphState) =>

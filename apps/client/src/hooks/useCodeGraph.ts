@@ -35,8 +35,7 @@ export function useCodeGraph({
     setSyncStatus,
     setConnected,
     setFingerprintCheck,
-    fingerprint,
-    // syncStatus is used via setSyncStatus calls below
+    // fingerprint read directly from store to avoid dependency cycle
   } = useCodeGraphStore();
 
   const connect = useCallback(() => {
@@ -59,16 +58,20 @@ export function useCodeGraph({
         setConnected(true);
         reconnectAttemptRef.current = 0;
 
-        // Send current fingerprint for validation
-        if (fingerprint) {
-          ws.send(JSON.stringify({ type: 'fingerprint_check', fingerprint }));
+        // Send current fingerprint for validation (read fresh from store)
+        const fp = useCodeGraphStore.getState().fingerprint;
+        if (fp) {
+          ws.send(JSON.stringify({ type: 'fingerprint_check', fingerprint: fp }));
         }
 
         // Start periodic fingerprint checks
         fingerprintCheckIntervalRef.current = window.setInterval(() => {
-          if (wsRef.current?.readyState === WebSocket.OPEN && fingerprint) {
-            wsRef.current.send(JSON.stringify({ type: 'fingerprint_check', fingerprint }));
-            setFingerprintCheck(Date.now());
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            const fp = useCodeGraphStore.getState().fingerprint;
+            if (fp) {
+              wsRef.current.send(JSON.stringify({ type: 'fingerprint_check', fingerprint: fp }));
+              setFingerprintCheck(Date.now());
+            }
           }
         }, FINGERPRINT_CHECK_INTERVAL);
       };
@@ -164,7 +167,7 @@ export function useCodeGraph({
       onError?.(error);
       scheduleReconnect();
     }
-  }, [enabled, fingerprint, applySnapshot, applyDelta, setSyncStatus, setConnected, setFingerprintCheck, onSnapshot, onDelta, onError]);
+  }, [enabled, applySnapshot, applyDelta, setSyncStatus, setConnected, setFingerprintCheck, onSnapshot, onDelta, onError]);
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -210,11 +213,14 @@ export function useCodeGraph({
 
   const requestResync = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: 'fingerprint_check', fingerprint }));
+      const fp = useCodeGraphStore.getState().fingerprint;
+      if (fp) {
+        wsRef.current.send(JSON.stringify({ type: 'fingerprint_check', fingerprint: fp }));
+      }
     } else {
       connect();
     }
-  }, [fingerprint, connect]);
+  }, [connect]);
 
   useEffect(() => {
     isMountedRef.current = true;
