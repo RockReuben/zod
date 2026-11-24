@@ -1032,6 +1032,21 @@ def create_app():
         # Check if this is a WebSocket upgrade request
         if request.headers.get("Upgrade", "").lower() == "websocket":
             return await handler(request)  # Let WebSocket handler set its own CORS
+
+        # Handle OPTIONS preflight requests
+        if request.method == "OPTIONS":
+            origin = request.headers.get("Origin", "")
+            allowed_origins = ["http://127.0.0.1:5173", "http://localhost:5173"]
+            if origin in allowed_origins:
+                response = aiohttp_web.Response(status=200)
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+                response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+                response.headers["Access-Control-Max-Age"] = "86400"
+                return response
+            return aiohttp_web.Response(status=403)
+
         response = await handler(request)
         origin = request.headers.get("Origin", "")
         allowed_origins = ["http://127.0.0.1:5173", "http://localhost:5173"]
