@@ -84,11 +84,27 @@ const mockUseEventStream = vi.mocked(useEventStream);
 
 describe('ControlPane component', () => {
   const mockSetFilter = vi.fn();
+  const mockSetActivePlan = vi.fn();
+  const mockSetDiffMode = vi.fn();
+  const mockSetAvailablePlans = vi.fn();
   const mockOnDiagramChange = vi.fn();
+
+  // Shared mock plan diff state
+  const mockPlanDiff = {
+    activePlan: null,
+    availablePlans: [],
+    diffMode: 'none' as const,
+    currentDiagram: '',
+    proposedDiagram: '',
+    isLoadingProposed: false,
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockOnDiagramChange.mockClear();
+    mockSetActivePlan.mockClear();
+    mockSetDiffMode.mockClear();
+    mockSetAvailablePlans.mockClear();
 
     mockGetAvailableFilters.mockReturnValue({
       sourceApps: ['pkg-auth', 'pkg-db', 'pkg-api'],
@@ -103,6 +119,10 @@ describe('ControlPane component', () => {
         events: mockEvents,
         replay: { isReplaying: false, replaySessionId: null, replaySpeed: 1, replayProgress: 0, sessions: [] },
         getAvailableFilters: mockGetAvailableFilters,
+        planDiff: mockPlanDiff,
+        setActivePlan: mockSetActivePlan,
+        setDiffMode: mockSetDiffMode,
+        setAvailablePlans: mockSetAvailablePlans,
       };
       return selector(state);
     });
@@ -293,6 +313,10 @@ describe('ControlPane component', () => {
         events: mockEvents,
         replay: { isReplaying: true, replaySessionId: 'sess-1', replaySpeed: 2, replayProgress: 50, sessions: [] },
         getAvailableFilters: mockGetAvailableFilters,
+        planDiff: mockPlanDiff,
+        setActivePlan: mockSetActivePlan,
+        setDiffMode: mockSetDiffMode,
+        setAvailablePlans: mockSetAvailablePlans,
       };
       return selector(state);
     });
@@ -349,6 +373,10 @@ describe('ControlPane component', () => {
         events: [],
         replay: { isReplaying: false, replaySessionId: null, replaySpeed: 1, replayProgress: 0, sessions: [] },
         getAvailableFilters: mockGetAvailableFilters,
+        planDiff: mockPlanDiff,
+        setActivePlan: mockSetActivePlan,
+        setDiffMode: mockSetDiffMode,
+        setAvailablePlans: mockSetAvailablePlans,
       };
       return selector(state);
     });
@@ -391,6 +419,10 @@ describe('ControlPane component', () => {
         events: mockEvents,
         replay: { isReplaying: false, replaySessionId: null, replaySpeed: 1, replayProgress: 0, sessions: [] },
         getAvailableFilters: mockGetAvailableFilters,
+        planDiff: mockPlanDiff,
+        setActivePlan: mockSetActivePlan,
+        setDiffMode: mockSetDiffMode,
+        setAvailablePlans: mockSetAvailablePlans,
       };
       return selector(state);
     });
@@ -411,6 +443,10 @@ describe('ControlPane component', () => {
         events: mockEvents,
         replay: { isReplaying: false, replaySessionId: null, replaySpeed: 1, replayProgress: 0, sessions: [] },
         getAvailableFilters: mockGetAvailableFilters,
+        planDiff: mockPlanDiff,
+        setActivePlan: mockSetActivePlan,
+        setDiffMode: mockSetDiffMode,
+        setAvailablePlans: mockSetAvailablePlans,
       };
       return selector(state);
     });
@@ -428,6 +464,14 @@ describe('ControlPane component', () => {
   it('filter dropdowns reflect current filter values from store', () => {
     // pending:P5.6: remove this marker when this test passes
     // matrix: ControlPane.filterSync | Valid / typical | P5.6 spec
+    const mockPlanDiff = {
+      activePlan: null,
+      availablePlans: [],
+      diffMode: 'none' as const,
+      currentDiagram: '',
+      proposedDiagram: '',
+      isLoadingProposed: false,
+    };
     mockUseEventsStore.mockImplementation((selector: any) => {
       const state = {
         filters: { sourceApp: 'pkg-db', agentName: 'api-agent', eventType: 'PostToolUse' },
@@ -435,6 +479,10 @@ describe('ControlPane component', () => {
         events: mockEvents,
         replay: { isReplaying: false, replaySessionId: null, replaySpeed: 1, replayProgress: 0, sessions: [] },
         getAvailableFilters: mockGetAvailableFilters,
+        planDiff: mockPlanDiff,
+        setActivePlan: mockSetActivePlan,
+        setDiffMode: mockSetDiffMode,
+        setAvailablePlans: mockSetAvailablePlans,
       };
       return selector(state);
     });

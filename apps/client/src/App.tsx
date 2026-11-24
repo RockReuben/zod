@@ -14,6 +14,7 @@ function App() {
   const clearExpiredHighlights = useEventsStore((s) => s.clearExpiredHighlights);
   const updateAvailableTargets = useEventsStore((s) => s.updateAvailableTargets);
   const events = useEventsStore((s) => s.events);
+  const planDiff = useEventsStore((s) => s.planDiff);
 
   // Initialize WebSocket event stream
   useEventStream();
@@ -31,6 +32,14 @@ function App() {
     updateAvailableTargets();
   }, [events, updateAvailableTargets]);
 
+  // Load current diagram when plan changes
+  useEffect(() => {
+    if (planDiff.activePlan) {
+      // The diagram will be loaded by DiagramPanel
+      // We just need to ensure proposed diagram is loaded
+    }
+  }, [planDiff.activePlan]);
+
   // Initialize shortcuts (this loads the keybindings config)
   useShortcut('toggleChatPanel', () => {}, []);
   useShortcut('focusChat', () => {}, []);
@@ -46,7 +55,12 @@ function App() {
 
       {/* Center Pane: Diagram Canvas */}
       <main className="main-content">
-        <DiagramPanel diagramName={activeDiagram} highlights={highlights} />
+        <DiagramPanel
+          diagramName={activeDiagram}
+          highlights={highlights}
+          diffMode={planDiff.diffMode}
+          proposedDiagram={planDiff.proposedDiagram}
+        />
       </main>
 
       {/* Right Pane: Vertical Timeline */}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { HookEvent, SessionLane, NodeHighlight, InboxMessage, QuestionMessage, ChatItem } from '../types';
+import { HookEvent, SessionLane, NodeHighlight, InboxMessage, QuestionMessage, ChatItem, PlanInfo, DiffMode } from '../types';
 import { getAgentColor } from '../utils/agentColors';
 
 const MAX_EVENTS = 1000;
@@ -43,6 +43,15 @@ export interface ReplayState {
   sessions: SessionInfo[];
 }
 
+export interface PlanDiffState {
+  activePlan: string | null;
+  availablePlans: PlanInfo[];
+  diffMode: DiffMode;
+  currentDiagram: string;
+  proposedDiagram: string;
+  isLoadingProposed: boolean;
+}
+
 interface EventsState {
   events: HookEvent[];
   filters: FilterState;
@@ -61,6 +70,9 @@ interface EventsState {
   // Question state
   questions: ServerQuestion[];
   questionsPollingInterval: ReturnType<typeof setInterval> | null;
+
+  // Plan diff state
+  planDiff: PlanDiffState;
 
   addEvent: (event: HookEvent) => void;
   setFilter: (key: keyof FilterState, value: string) => void;
@@ -113,6 +125,14 @@ interface EventsState {
   // Chat items selector (merges messages + questions for a target)
   getChatItems: (target: string) => ChatItem[];
   getUnreadCount: (target: string) => number;
+
+  // Plan diff actions
+  setActivePlan: (planName: string | null) => void;
+  setDiffMode: (mode: DiffMode) => void;
+  setAvailablePlans: (plans: PlanInfo[]) => void;
+  setCurrentDiagram: (diagram: string) => void;
+  setProposedDiagram: (diagram: string) => void;
+  setLoadingProposed: (loading: boolean) => void;
 }
 
 const initialFilters: FilterState = {
@@ -127,6 +147,15 @@ const initialReplay: ReplayState = {
   replaySpeed: 1,
   replayProgress: 0,
   sessions: [],
+};
+
+const initialPlanDiff: PlanDiffState = {
+  activePlan: null,
+  availablePlans: [],
+  diffMode: 'none',
+  currentDiagram: '',
+  proposedDiagram: '',
+  isLoadingProposed: false,
 };
 
 const useEventsStore = create<EventsState>((set, get) => ({
@@ -145,6 +174,8 @@ const useEventsStore = create<EventsState>((set, get) => ({
 
   questions: [],
   questionsPollingInterval: null,
+
+  planDiff: { ...initialPlanDiff },
 
   addEvent: (event: HookEvent) => {
     const { events, replay, trackReads, trackSearches } = get();
@@ -537,6 +568,43 @@ const useEventsStore = create<EventsState>((set, get) => ({
       clearInterval(questionsPollingInterval);
       set({ questionsPollingInterval: null });
     }
+  },
+
+  // Plan diff actions
+  setActivePlan: (planName: string | null) => {
+    set((state) => ({
+      planDiff: { ...state.planDiff, activePlan: planName },
+    }));
+  },
+
+  setDiffMode: (mode: DiffMode) => {
+    set((state) => ({
+      planDiff: { ...state.planDiff, diffMode: mode },
+    }));
+  },
+
+  setAvailablePlans: (plans: PlanInfo[]) => {
+    set((state) => ({
+      planDiff: { ...state.planDiff, availablePlans: plans },
+    }));
+  },
+
+  setCurrentDiagram: (diagram: string) => {
+    set((state) => ({
+      planDiff: { ...state.planDiff, currentDiagram: diagram },
+    }));
+  },
+
+  setProposedDiagram: (diagram: string) => {
+    set((state) => ({
+      planDiff: { ...state.planDiff, proposedDiagram: diagram, isLoadingProposed: false },
+    }));
+  },
+
+  setLoadingProposed: (loading: boolean) => {
+    set((state) => ({
+      planDiff: { ...state.planDiff, isLoadingProposed: loading },
+    }));
   },
 
   // Chat items selector - merges messages and questions for a target

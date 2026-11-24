@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useEventsStore } from '../stores/events';
 import { useEventStream } from '../hooks/useEventStream';
-import { ConnectionStatus } from '../types';
+import { ConnectionStatus, DiffMode } from '../types';
 import './ControlPane.css';
 
 interface ControlPaneProps {
@@ -20,6 +20,12 @@ export function ControlPane({ onDiagramChange, activeDiagram = 'system-overview'
   const setTrackReads = useEventsStore((s) => s.setTrackReads);
   const trackSearches = useEventsStore((s) => s.trackSearches);
   const setTrackSearches = useEventsStore((s) => s.setTrackSearches);
+
+  // Plan diff state
+  const planDiff = useEventsStore((s) => s.planDiff);
+  const setActivePlan = useEventsStore((s) => s.setActivePlan);
+  const setDiffMode = useEventsStore((s) => s.setDiffMode);
+  const setAvailablePlans = useEventsStore((s) => s.setAvailablePlans);
 
   // Compute stats
   const stats = useMemo(() => {
@@ -51,6 +57,29 @@ export function ControlPane({ onDiagramChange, activeDiagram = 'system-overview'
     setFilter(key, value);
   };
 
+  // Load available plans on mount
+  useEffect(() => {
+    const knownPlans = ['sample-plan'];
+    const planInfos = knownPlans.map(name => ({
+      name,
+      path: `docs/plans/${name}/`,
+      hasProposedDiagram: true,
+    }));
+    setAvailablePlans(planInfos);
+  }, [setAvailablePlans]);
+
+  const handlePlanChange = (planName: string | null) => {
+    setActivePlan(planName);
+    // When plan changes, reset diff mode
+    if (!planName) {
+      setDiffMode('none');
+    }
+  };
+
+  const handleDiffModeChange = (mode: DiffMode) => {
+    setDiffMode(mode);
+  };
+
   return (
     <div className="control-pane">
       {/* Header */}
@@ -78,6 +107,39 @@ export function ControlPane({ onDiagramChange, activeDiagram = 'system-overview'
         >
           <option value="system-overview">System Overview</option>
           {/* Future diagrams can be added here */}
+        </select>
+      </section>
+
+      {/* Plan Selector */}
+      <section className="control-section">
+        <label className="control-label" htmlFor="plan-select">Plan</label>
+        <select
+          id="plan-select"
+          className="control-select"
+          value={planDiff.activePlan || 'none'}
+          onChange={(e) => handlePlanChange(e.target.value || null)}
+        >
+          <option value="none">No Plan (Current Only)</option>
+          {planDiff.availablePlans.map((plan) => (
+            <option key={plan.name} value={plan.name}>{plan.name}</option>
+          ))}
+        </select>
+      </section>
+
+      {/* Diff Mode Selector */}
+      <section className="control-section">
+        <label className="control-label" htmlFor="diff-mode-select">Diff Mode</label>
+        <select
+          id="diff-mode-select"
+          className="control-select"
+          value={planDiff.diffMode}
+          onChange={(e) => handleDiffModeChange(e.target.value as DiffMode)}
+          disabled={!planDiff.activePlan}
+        >
+          <option value="none">None (Current Only)</option>
+          <option value="overlay">Overlay (Single Canvas)</option>
+          <option value="side-by-side">Side by Side</option>
+          <option value="code">Code Changes</option>
         </select>
       </section>
 

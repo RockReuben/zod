@@ -95,6 +95,42 @@ export function isQuestionMessage(item: ChatItem): item is QuestionMessage {
   return item.type === 'question';
 }
 
+/** Plan diff types */
+export type DiffMode = 'none' | 'overlay' | 'side-by-side' | 'code';
+
+export interface ParsedDiagram {
+  nodes: Map<string, NodeInfo>;
+  edges: EdgeInfo[];
+}
+
+export interface NodeInfo {
+  id: string;
+  label: string;
+  subgraph: string;
+  shape?: string;
+}
+
+export interface EdgeInfo {
+  source: string;
+  target: string;
+  label?: string;
+  style?: string;
+}
+
+export interface DiagramDiff {
+  added: Set<string>;
+  removed: Set<string>;
+  modified: Set<string>;
+  unchanged: Set<string>;
+}
+
+/** Plan information */
+export interface PlanInfo {
+  name: string;
+  path: string;
+  hasProposedDiagram: boolean;
+}
+
 /** Speech Recognition API types (webkitSpeechRecognition / SpeechRecognition) */
 export interface SpeechRecognition extends EventTarget {
   continuous: boolean;

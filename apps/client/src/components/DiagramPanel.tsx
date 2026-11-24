@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { getApiBase, getToken } from '../config';
-import { NodeHighlight } from '../types';
+import { NodeHighlight, DiffMode } from '../types';
 import { MermaidViewer } from './MermaidViewer';
+import { PlanDiffPanel } from './PlanDiffPanel';
 import './DiagramPanel.css';
 
 interface DiagramPanelProps {
   diagramName?: string;
   onDiagramError?: (error: string) => void;
   highlights?: NodeHighlight[];
+  diffMode?: DiffMode;
+  proposedDiagram?: string;
 }
 
-export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, highlights = [] }: DiagramPanelProps) {
+export function DiagramPanel({
+  diagramName = 'system-overview',
+  onDiagramError,
+  highlights = [],
+  diffMode = 'none',
+  proposedDiagram = ''
+}: DiagramPanelProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mermaidCode, setMermaidCode] = useState<string>('');
@@ -138,6 +147,21 @@ export function DiagramPanel({ diagramName = 'system-overview', onDiagramError, 
   useEffect(() => {
     fetchDiagram();
   }, [fetchDiagram]);
+
+  // If diff mode is active and we have a proposed diagram, render PlanDiffPanel
+  if (diffMode !== 'none' && proposedDiagram) {
+    return (
+      <div className="diagram-panel" role="img" aria-label={`Plan diff: ${diagramName}`} style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div className="diagram-panel-inner" style={{ flex: 1, height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+          <PlanDiffPanel
+            currentDiagram={mermaidCode}
+            proposedDiagram={proposedDiagram}
+            onError={onDiagramError}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
